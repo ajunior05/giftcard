@@ -479,12 +479,12 @@ function parseGiftCard(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const skipLine = /minhas compras|carteira|apple|adicionar|saldo|valor|enviar|marcar|utilizar|resumo|sobre|consulte/i;
 
-  // Código: linha com 15+ dígitos consecutivos
+  // Código: primeira sequência de 15+ dígitos consecutivos (ignora ícones do OCR)
   let code = '';
   let codeLineIdx = -1;
   for (let i = 0; i < lines.length; i++) {
-    const digits = lines[i].replace(/[\s\-]/g, '');
-    if (/^\d{15,}$/.test(digits)) { code = digits; codeLineIdx = i; break; }
+    const m = lines[i].match(/\d{15,}/);
+    if (m) { code = m[0]; codeLineIdx = i; break; }
   }
 
   // PIN: dígitos após "PIN"
