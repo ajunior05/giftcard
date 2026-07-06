@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
 <title>Meus Gift Cards</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.12.1/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -97,7 +98,9 @@
   input:focus{outline:none; border-color:var(--orange);}
   .field-row{display:flex; gap:8px; align-items:stretch;}
   .field-row input{flex:1; min-width:0;}
-  .currency-select{width:66px; flex:none; padding:0 4px; border-radius:10px; border:1.5px solid var(--line); background:#fff; font-family:'Inter'; font-weight:600; font-size:14px; color:var(--ink);}
+  .currency-label{display:flex; align-items:center; padding:0 12px; border-radius:10px; border:1.5px solid var(--line); background:#fff; font-weight:600; font-size:14px; color:var(--ink); white-space:nowrap;}
+  .scan-btn{width:100%; padding:11px; border-radius:10px; border:1.5px dashed var(--line); background:var(--paper); font-family:'Inter'; font-weight:600; font-size:13.5px; color:#6B6459; cursor:pointer; margin-bottom:6px;}
+  .scan-btn:disabled{opacity:0.5; cursor:default;}
   .paste-btn{flex:none; width:46px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper-dim); font-size:17px; cursor:pointer;}
   .sheet-actions{display:flex; gap:10px; margin-top:22px;}
 
@@ -163,6 +166,8 @@
   <div class="sheet">
     <div class="sheet-handle"></div>
     <h2 id="formTitle">Novo gift card</h2>
+    <input type="file" id="scanInput" accept="image/*" style="display:none" onchange="handleScan(this)">
+    <button type="button" class="scan-btn" id="scanBtn" onclick="triggerScan()">📷 Escanear screenshot do gift card</button>
     <input type="hidden" id="editId">
     <label>Empresa / loja</label>
     <input type="text" id="fCompany" placeholder="Ex: Amazon, Renner, SeaWorld...">
@@ -170,9 +175,7 @@
     <input type="text" id="fName" placeholder="Ex: Gift Card Viagem 1">
     <label>Saldo</label>
     <div class="field-row">
-      <select id="fCurrency" class="currency-select">
-        <option value="R$">R$</option><option value="US$">US$</option><option value="€">€</option>
-      </select>
+      <span class="currency-label">US$</span>
       <input type="number" id="fValue" placeholder="0,00" step="0.01" inputmode="decimal">
       <button type="button" class="paste-btn" onclick="pasteInto('fValue')">📋</button>
     </div>
@@ -386,7 +389,6 @@ function editCard(id){
   document.getElementById('fCompany').value = c.company || '';
   document.getElementById('fName').value = c.name;
   document.getElementById('fValue').value = c.value;
-  document.getElementById('fCurrency').value = c.currency || 'R$';
   document.getElementById('fCode').value = c.code || '';
   document.getElementById('fPin').value = c.pin || '';
   document.getElementById('formOverlay').classList.add('show');
@@ -396,7 +398,7 @@ async function saveCard(){
   const company = document.getElementById('fCompany').value.trim();
   const name = document.getElementById('fName').value.trim();
   const value = parseFloat(document.getElementById('fValue').value) || 0;
-  const currency = document.getElementById('fCurrency').value;
+  const currency = 'US$';
   const code = document.getElementById('fCode').value.trim();
   const pin = document.getElementById('fPin').value.trim();
   const editId = document.getElementById('editId').value;
@@ -467,6 +469,64 @@ async function confirmDebit(){
   closeUse();
   const c = cards.find(x => x.id === id);
   showToast(`Debitado! Novo saldo: ${fmtMoney(data.value, c ? c.currency : 'R$')}`);
+}
+
+// ---------- OCR / Scan ----------
+function triggerScan(){
+  document.getElementById('scanInput').click();
+}
+
+function parseGiftCard(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+
+  // Código: linha composta só de dígitos com 15+ caracteres
+  let code = '';
+  for (const line of lines) {
+    const digits = line.replace(/[\s\-]/g, '');
+    if (/^\d{15,}$/.test(digits)) { code = digits; break; }
+  }
+
+  // PIN: "PIN XXXX" (4-8 dígitos)
+  const pinMatch = text.match(/PIN\s+(\d{4,8})/i);
+  const pin = pinMatch ? pinMatch[1] : '';
+
+  // Valor: "Valor: US$ XX,XX" — ignora linha de Saldo
+  const valueMatch = text.match(/Valor[^U\n]*US\$\s*([\d.,]+)/i);
+  const value = valueMatch ? parseFloat(valueMatch[1].replace(',', '.')) : '';
+
+  // Empresa: primeira linha que contenha "Gift" ou "eGift"
+  let company = '';
+  for (const line of lines) {
+    if (/gift/i.test(line) && line.length < 60) { company = line.trim(); break; }
+  }
+
+  return { company, code, pin, value };
+}
+
+async function handleScan(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  const btn = document.getElementById('scanBtn');
+  btn.textContent = '⏳ Lendo imagem...';
+  btn.disabled = true;
+  try {
+    const { data: { text } } = await Tesseract.recognize(file, 'eng');
+    const parsed = parseGiftCard(text);
+    if (!parsed.code) { showToast('Não encontrei o código. Verifique a imagem.'); return; }
+    document.getElementById('fCompany').value = parsed.company;
+    document.getElementById('fName').value = parsed.company;
+    if (parsed.value) document.getElementById('fValue').value = parsed.value;
+    document.getElementById('fCode').value = parsed.code;
+    document.getElementById('fPin').value = parsed.pin;
+    showToast('Confira os dados e salve!');
+  } catch(e) {
+    console.error('[scan]', e);
+    showToast('Erro ao ler a imagem. Tente outra foto.');
+  } finally {
+    btn.textContent = '📷 Escanear screenshot do gift card';
+    btn.disabled = false;
+  }
 }
 
 checkSession();
