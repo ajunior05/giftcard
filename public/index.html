@@ -477,34 +477,37 @@ function triggerScan(){
 
 function parseGiftCard(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const skipLine = /minhas compras|carteira|apple|adicionar|saldo|valor|enviar|marcar|utilizar|resumo|sobre|consulte/i;
 
-  // Código: linha composta só de dígitos com 15+ caracteres
+  // Código: linha com 15+ dígitos consecutivos
   let code = '';
-  for (const line of lines) {
-    const digits = line.replace(/[\s\-]/g, '');
-    if (/^\d{15,}$/.test(digits)) { code = digits; break; }
+  let codeLineIdx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const digits = lines[i].replace(/[\s\-]/g, '');
+    if (/^\d{15,}$/.test(digits)) { code = digits; codeLineIdx = i; break; }
   }
 
-  // PIN: "PIN XXXX" (4-8 dígitos)
+  // PIN: dígitos após "PIN"
   const pinMatch = text.match(/PIN\s+(\d{4,8})/i);
   const pin = pinMatch ? pinMatch[1] : '';
 
-  // Valor: "Valor: US$ XX,XX" — ignora linha de Saldo
-  const valueMatch = text.match(/Valor[^U\n]*US\$\s*([\d.,]+)/i);
-  const value = valueMatch ? parseFloat(valueMatch[1].replace(',', '.')) : '';
+  // Valor: primeiro "US$ X,XX" com valor > 0 encontrado no texto
+  let value = '';
+  for (const m of text.matchAll(/US\$\s*([\d.,]+)/gi)) {
+    const v = parseFloat(m[1].replace(',', '.'));
+    if (v > 0) { value = v; break; }
+  }
 
-  // Empresa: linha imediatamente antes de "Valor:" (ignorando cabeçalhos do app)
+  // Empresa: linha antes do código (ignorando cabeçalhos)
   let company = '';
-  const skipLine = /minhas compras|carteira|apple|adicionar|saldo/i;
-  const valorIdx = lines.findIndex(l => /valor/i.test(l));
-  if (valorIdx > 0) {
-    for (let i = valorIdx - 1; i >= 0; i--) {
-      if (!skipLine.test(lines[i]) && lines[i].length > 1) { company = lines[i]; break; }
+  if (codeLineIdx > 0) {
+    for (let i = codeLineIdx - 1; i >= 0; i--) {
+      if (!skipLine.test(lines[i]) && lines[i].length > 2) { company = lines[i]; break; }
     }
   }
   if (!company) {
     for (const line of lines) {
-      if (/gift/i.test(line) && line.length < 60) { company = line; break; }
+      if (!skipLine.test(line) && line.length > 2 && line.length < 60) { company = line; break; }
     }
   }
 
@@ -519,7 +522,8 @@ async function handleScan(input) {
   btn.textContent = '⏳ Lendo imagem...';
   btn.disabled = true;
   try {
-    const { data: { text } } = await Tesseract.recognize(file, 'eng');
+    const { data: { text } } = await Tesseract.recognize(file, 'eng+por');
+    console.log('[scan raw]', text);
     const parsed = parseGiftCard(text);
     if (!parsed.code) { showToast('Não encontrei o código. Verifique a imagem.'); return; }
     document.getElementById('fCompany').value = parsed.company;
