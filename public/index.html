@@ -493,10 +493,19 @@ function parseGiftCard(text) {
   const valueMatch = text.match(/Valor[^U\n]*US\$\s*([\d.,]+)/i);
   const value = valueMatch ? parseFloat(valueMatch[1].replace(',', '.')) : '';
 
-  // Empresa: primeira linha que contenha "Gift" ou "eGift"
+  // Empresa: linha imediatamente antes de "Valor:" (ignorando cabeçalhos do app)
   let company = '';
-  for (const line of lines) {
-    if (/gift/i.test(line) && line.length < 60) { company = line.trim(); break; }
+  const skipLine = /minhas compras|carteira|apple|adicionar|saldo/i;
+  const valorIdx = lines.findIndex(l => /valor/i.test(l));
+  if (valorIdx > 0) {
+    for (let i = valorIdx - 1; i >= 0; i--) {
+      if (!skipLine.test(lines[i]) && lines[i].length > 1) { company = lines[i]; break; }
+    }
+  }
+  if (!company) {
+    for (const line of lines) {
+      if (/gift/i.test(line) && line.length < 60) { company = line; break; }
+    }
   }
 
   return { company, code, pin, value };
