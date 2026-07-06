@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Meus Gift Cards</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.5/JsBarcode.all.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange: #FF7A00; --orange-deep: #E65C00; --ink: #1A1A1A;
+    --paper: #FBF9F6; --paper-dim: #F0ECE5; --line: #E2DDD3; --ok: #1F8A57;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0; background:var(--paper); color:var(--ink); font-family:'Inter',sans-serif; min-height:100vh;}
+  h1,h2,.display{font-family:'Space Grotesk',sans-serif;}
+  .app{max-width:520px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;}
+
+  /* ---- Auth ---- */
+  .auth-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;}
+  .auth-box{width:100%; max-width:360px;}
+  .auth-box h1{font-size:26px; margin:0 0 4px;}
+  .auth-box p.sub{color:#6B6459; font-size:14px; margin:0 0 24px;}
+  .auth-error{color:#B3402A; font-size:13.5px; margin:10px 0 0; min-height:16px;}
+  .auth-toggle{text-align:center; margin-top:16px; font-size:13.5px; color:#6B6459;}
+  .auth-toggle a{color:var(--orange-deep); font-weight:600; cursor:pointer; text-decoration:none;}
+
+  header.top{padding:20px 20px 14px; display:flex; align-items:center; justify-content:space-between;}
+  .eyebrow{font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--orange-deep); font-weight:600; margin:0 0 4px;}
+  h1{font-size:26px; font-weight:700; margin:0; letter-spacing:-0.01em;}
+  .logout-btn{background:var(--paper-dim); border:none; border-radius:8px; padding:8px 12px; font-size:12.5px; font-weight:600; color:#6B6459; cursor:pointer;}
+
+  .total-strip{
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin:6px 20px 4px; padding:16px 18px; background:var(--ink); border-radius:14px; color:var(--paper);
+  }
+  .total-strip .label{font-size:12px; text-transform:uppercase; letter-spacing:0.1em; color:#B9B3A6;}
+  .total-strip .value{font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:700; color:var(--orange);}
+
+  main{flex:1; padding: 8px 20px 100px;}
+  .empty{text-align:center; padding:60px 20px; color:#8A8378;}
+  .empty .icon{font-size:40px; margin-bottom:10px;}
+
+  .company-group{margin-top:14px;}
+  .company-group:first-child{margin-top:6px;}
+  .company-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 16px; border-radius:12px; background:#fff; border:1px solid var(--line);
+    cursor:pointer; user-select:none;
+  }
+  .company-header-left{display:flex; align-items:center; gap:10px;}
+  .chevron{font-size:12px; color:#8A8378; transition:transform .18s ease; display:inline-block;}
+  .company-group.expanded .chevron{transform:rotate(90deg);}
+  .company-name{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--orange-deep);}
+  .company-count{font-size:11.5px; color:#8A8378; font-weight:500;}
+  .company-subtotal{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14.5px; color:var(--ink);}
+  .company-cards{display:none; padding-top:10px;}
+  .company-group.expanded .company-cards{display:block;}
+
+  .card{position:relative; background:#fff; border-radius:16px; margin:16px 0; border:1px solid var(--line); overflow:hidden;}
+  .card-main{display:flex; align-items:center; justify-content:space-between; padding:16px 18px; cursor:pointer;}
+  .card-name{font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:17px; margin:0 0 3px;}
+  .card-sub{font-size:12.5px; color:#8A8378; margin:0;}
+  .card-value{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px; color:var(--orange-deep); white-space:nowrap; margin-left:12px;}
+  .perforation{position:relative; height:0; border-top:2px dashed var(--line); margin:0 18px;}
+  .perforation::before, .perforation::after{content:""; position:absolute; top:-9px; width:18px; height:18px; background:var(--paper); border-radius:50%;}
+  .perforation::before{left:-27px;} .perforation::after{right:-27px;}
+
+  .card-actions{display:flex; gap:6px; padding:12px 18px 16px; flex-wrap:wrap;}
+  .btn{border:none; border-radius:10px; padding:11px 8px; font-family:'Inter'; font-weight:600; font-size:13.5px; cursor:pointer; flex:1 1 auto; min-width:78px;}
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{background:var(--orange); color:#fff;}
+  .btn-ghost{background:var(--paper-dim); color:var(--ink);}
+  .btn-danger{background:transparent; color:#B3402A;}
+  .btn-block{width:100%; padding:13px;}
+
+  .fab{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    max-width:480px; width:calc(100% - 40px); background:var(--ink); color:#fff; border:none; border-radius:14px;
+    padding:16px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:15px;
+    display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 8px 24px rgba(0,0,0,0.18); cursor:pointer;
+  }
+  .fab span.plus{color:var(--orange); font-size:20px; line-height:0;}
+
+  .overlay{position:fixed; inset:0; background:rgba(20,17,12,0.55); display:flex; align-items:flex-end; z-index:50; opacity:0; pointer-events:none; transition:opacity .18s ease;}
+  .overlay.show{opacity:1; pointer-events:auto;}
+  .sheet{background:var(--paper); width:100%; max-width:520px; margin:0 auto; border-radius:20px 20px 0 0; padding:22px 20px 28px; max-height:88vh; overflow-y:auto; transform:translateY(24px); transition:transform .2s ease;}
+  .overlay.show .sheet{transform:translateY(0);}
+  .sheet-handle{width:36px; height:4px; background:var(--line); border-radius:2px; margin:0 auto 18px;}
+  .sheet h2{font-size:20px; margin:0 0 18px;}
+
+  label{display:block; font-size:12.5px; font-weight:600; color:#6B6459; margin:14px 0 6px; text-transform:uppercase; letter-spacing:0.06em;}
+  input[type=text], input[type=email], input[type=password], input[type=number]{
+    width:100%; padding:13px 14px; border-radius:10px; border:1.5px solid var(--line); background:#fff; font-family:'Inter'; font-size:15px; color:var(--ink);
+  }
+  input:focus{outline:none; border-color:var(--orange);}
+  .field-row{display:flex; gap:8px; align-items:stretch;}
+  .field-row input{flex:1; min-width:0;}
+  .currency-select{width:66px; flex:none; padding:0 4px; border-radius:10px; border:1.5px solid var(--line); background:#fff; font-family:'Inter'; font-weight:600; font-size:14px; color:var(--ink);}
+  .paste-btn{flex:none; width:46px; border:1.5px solid var(--line); border-radius:10px; background:var(--paper-dim); font-size:17px; cursor:pointer;}
+  .sheet-actions{display:flex; gap:10px; margin-top:22px;}
+
+  .use-screen{position:fixed; inset:0; background:#fff; z-index:60; display:none; flex-direction:column;}
+  .use-screen.show{display:flex;}
+  .use-top{display:flex; align-items:center; justify-content:space-between; padding:18px 18px 6px;}
+  .close-btn{background:var(--paper-dim); border:none; width:36px; height:36px; border-radius:50%; font-size:18px; cursor:pointer;}
+  .use-body{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center;}
+  .use-name{font-family:'Space Grotesk',sans-serif; font-size:22px; font-weight:700; margin:0 0 2px;}
+  .use-value{color:var(--orange-deep); font-weight:700; font-family:'Space Grotesk',sans-serif; font-size:16px; margin-bottom:22px;}
+  .barcode-wrap{background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 10px; width:100%;}
+  .barcode-wrap svg{width:100%; height:auto;}
+  .use-code{font-family:'Space Grotesk',monospace; letter-spacing:0.08em; font-size:15px; margin-top:14px; color:#6B6459;}
+  .pin-box{margin-top:14px; background:var(--paper-dim); border-radius:10px; padding:10px 16px; display:flex; align-items:center; gap:10px; justify-content:center;}
+  .pin-label{font-size:11.5px; text-transform:uppercase; letter-spacing:0.1em; color:#8A8378; font-weight:700;}
+  .pin-value{font-family:'Space Grotesk',monospace; font-weight:700; font-size:17px; letter-spacing:0.06em;}
+  .hint{font-size:12.5px; color:#B9B3A6; margin-top:18px;}
+
+  .toast{position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:10px; font-size:13.5px; opacity:0; transition:opacity .2s ease; pointer-events:none; z-index:80;}
+  .toast.show{opacity:1;}
+  .hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<!-- Tela de login/cadastro -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-box">
+    <p class="eyebrow">Viagem</p>
+    <h1 id="authTitle">Entrar</h1>
+    <p class="sub" id="authSub">Acesse seus gift cards.</p>
+    <label>E-mail</label>
+    <input type="email" id="authEmail" placeholder="voce@email.com">
+    <label>Senha</label>
+    <input type="password" id="authPassword" placeholder="Mínimo 6 caracteres">
+    <button class="btn btn-primary btn-block" style="margin-top:18px;" onclick="submitAuth()">Entrar</button>
+    <p class="auth-error" id="authError"></p>
+    <p class="auth-toggle" id="authToggle">Não tem conta? <a onclick="toggleAuthMode()">Cadastre-se</a></p>
+  </div>
+</div>
+
+<!-- App principal -->
+<div class="app hidden" id="mainApp">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Meus Gift Cards</p>
+      <h1>Viagem</h1>
+    </div>
+    <button class="logout-btn" onclick="logout()">Sair</button>
+  </header>
+
+  <div class="total-strip">
+    <div><div class="label">Saldo total</div></div>
+    <div class="value" id="totalValue">R$ 0,00</div>
+  </div>
+
+  <main id="listArea"></main>
+</div>
+
+<button class="fab hidden" id="fabBtn" onclick="openForm()"><span class="plus">+</span> Adicionar gift card</button>
+
+<div class="overlay" id="formOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 id="formTitle">Novo gift card</h2>
+    <input type="hidden" id="editId">
+    <label>Empresa / loja</label>
+    <input type="text" id="fCompany" placeholder="Ex: Amazon, Renner, SeaWorld...">
+    <label>Nome / apelido</label>
+    <input type="text" id="fName" placeholder="Ex: Gift Card Viagem 1">
+    <label>Saldo</label>
+    <div class="field-row">
+      <select id="fCurrency" class="currency-select">
+        <option value="R$">R$</option><option value="US$">US$</option><option value="€">€</option>
+      </select>
+      <input type="number" id="fValue" placeholder="0,00" step="0.01" inputmode="decimal">
+      <button type="button" class="paste-btn" onclick="pasteInto('fValue')">📋</button>
+    </div>
+    <label>Código de barras (número do cartão)</label>
+    <div class="field-row">
+      <input type="text" id="fCode" placeholder="Digite ou cole o número do cartão" inputmode="numeric">
+      <button type="button" class="paste-btn" onclick="pasteInto('fCode')">📋</button>
+    </div>
+    <label>PIN / senha do cartão</label>
+    <div class="field-row">
+      <input type="text" id="fPin" placeholder="Se houver, digite ou cole o PIN" inputmode="numeric">
+      <button type="button" class="paste-btn" onclick="pasteInto('fPin')">📋</button>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeForm()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCard()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="debitOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Registrar valor usado</h2>
+    <input type="hidden" id="debitCardId">
+    <p class="sub" id="debitCardInfo" style="margin-bottom:6px; color:#6B6459; font-size:14px;"></p>
+    <label>Valor utilizado agora</label>
+    <input type="number" id="debitAmount" placeholder="0,00" step="0.01" inputmode="decimal">
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeDebit()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmDebit()">Debitar</button>
+    </div>
+  </div>
+</div>
+
+<div class="use-screen" id="useScreen">
+  <div class="use-top"><div></div><button class="close-btn" onclick="closeUse()">✕</button></div>
+  <div class="use-body" id="useBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let cards = [];
+let expandedCompanies = new Set();
+let authMode = 'login';
+
+function fmtMoney(v, currency){
+  currency = currency || 'R$';
+  return currency + ' ' + Number(v||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 1800);
+}
+
+// ---------- Auth ----------
+function toggleAuthMode(){
+  authMode = authMode === 'login' ? 'signup' : 'login';
+  document.getElementById('authTitle').textContent = authMode === 'login' ? 'Entrar' : 'Criar conta';
+  document.getElementById('authToggle').innerHTML = authMode === 'login'
+    ? 'Não tem conta? <a onclick="toggleAuthMode()">Cadastre-se</a>'
+    : 'Já tem conta? <a onclick="toggleAuthMode()">Entrar</a>';
+  document.querySelector('#authScreen .btn-primary').textContent = authMode === 'login' ? 'Entrar' : 'Criar conta';
+  document.getElementById('authError').textContent = '';
+}
+
+async function submitAuth(){
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authError');
+  errEl.textContent = '';
+  try{
+    const resp = await fetch('/api/auth?action=' + authMode, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email, password})
+    });
+    const data = await resp.json();
+    if(!resp.ok){ errEl.textContent = data.error || 'Erro ao entrar.'; return; }
+    showApp();
+  }catch(e){
+    errEl.textContent = 'Não consegui conectar. Tente de novo.';
+  }
+}
+
+async function logout(){
+  await fetch('/api/auth?action=logout', {method:'POST'});
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('fabBtn').classList.add('hidden');
+  document.getElementById('authScreen').classList.remove('hidden');
+  document.getElementById('authPassword').value = '';
+}
+
+async function checkSession(){
+  try{
+    const resp = await fetch('/api/auth?action=me');
+    if(resp.ok){ showApp(); return; }
+  }catch(e){}
+  document.getElementById('authScreen').classList.remove('hidden');
+}
+
+async function showApp(){
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  document.getElementById('fabBtn').classList.remove('hidden');
+  await loadCards();
+}
+
+// ---------- Cards ----------
+async function loadCards(){
+  try{
+    const resp = await fetch('/api/cards');
+    if(resp.status === 401){ document.getElementById('mainApp').classList.add('hidden'); document.getElementById('fabBtn').classList.add('hidden'); document.getElementById('authScreen').classList.remove('hidden'); return; }
+    const data = await resp.json();
+    cards = data.cards || [];
+  }catch(e){ cards = []; }
+  render();
+}
+
+function totalsByCurrency(list){
+  const totals = {};
+  list.forEach(c => { const cur = c.currency || 'R$'; totals[cur] = (totals[cur]||0) + (Number(c.value)||0); });
+  return Object.entries(totals).map(([cur,v]) => fmtMoney(v,cur)).join(' + ');
+}
+
+function render(){
+  const area = document.getElementById('listArea');
+  document.getElementById('totalValue').textContent = cards.length ? totalsByCurrency(cards) : 'R$ 0,00';
+  if(cards.length === 0){
+    area.innerHTML = `<div class="empty"><div class="icon">🎫</div>Nenhum gift card ainda.<br>Toque em "Adicionar gift card" para começar.</div>`;
+    return;
+  }
+  const groups = {};
+  cards.forEach(c => { const key = (c.company||'').trim() || 'Outros'; (groups[key] = groups[key]||[]).push(c); });
+  const companyNames = Object.keys(groups).sort((a,b) => a==='Outros'?1 : b==='Outros'?-1 : a.localeCompare(b,'pt-BR'));
+
+  area.innerHTML = companyNames.map(company => {
+    const groupCards = groups[company];
+    const isOpen = expandedCompanies.has(company);
+    return `
+      <div class="company-group ${isOpen?'expanded':''}" data-company="${escapeHtml(company)}">
+        <div class="company-header" onclick="toggleCompany(this.parentElement.dataset.company)">
+          <div class="company-header-left">
+            <span class="chevron">▶</span>
+            <span class="company-name">${escapeHtml(company)}</span>
+            <span class="company-count">${groupCards.length} cartão${groupCards.length>1?'ões':''}</span>
+          </div>
+          <span class="company-subtotal">${totalsByCurrency(groupCards)}</span>
+        </div>
+        <div class="company-cards">
+          ${groupCards.map(c => `
+            <div class="card">
+              <div class="card-main" onclick="openUse('${c.id}')">
+                <div>
+                  <p class="card-name">${escapeHtml(c.name)}</p>
+                  <p class="card-sub">Código ····${String(c.code).slice(-4)}${c.pin ? ' · PIN salvo' : ''}</p>
+                </div>
+                <div class="card-value">${fmtMoney(c.value, c.currency)}</div>
+              </div>
+              <div class="perforation"></div>
+              <div class="card-actions">
+                <button class="btn btn-primary" onclick="openUse('${c.id}')">Usar</button>
+                <button class="btn btn-ghost" onclick="openDebit('${c.id}')">Debitar</button>
+                <button class="btn btn-ghost" onclick="editCard('${c.id}')">Editar</button>
+                <button class="btn btn-danger" onclick="deleteCard('${c.id}')">Excluir</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleCompany(company){
+  if(expandedCompanies.has(company)) expandedCompanies.delete(company); else expandedCompanies.add(company);
+  render();
+}
+
+function openForm(){
+  document.getElementById('formTitle').textContent = 'Novo gift card';
+  document.getElementById('editId').value = '';
+  document.getElementById('fCompany').value = '';
+  document.getElementById('fName').value = '';
+  document.getElementById('fValue').value = '';
+  document.getElementById('fCurrency').value = 'R$';
+  document.getElementById('fCode').value = '';
+  document.getElementById('fPin').value = '';
+  document.getElementById('formOverlay').classList.add('show');
+}
+function closeForm(){ document.getElementById('formOverlay').classList.remove('show'); }
+
+async function pasteInto(fieldId){
+  const field = document.getElementById(fieldId);
+  try{
+    const text = await navigator.clipboard.readText();
+    if(text){ field.value = text.trim(); field.focus(); showToast('Colado!'); return; }
+  }catch(e){}
+  field.focus();
+  showToast('Toque e segure o campo e escolha "Colar"');
+}
+
+function editCard(id){
+  const c = cards.find(x => x.id === id);
+  if(!c) return;
+  document.getElementById('formTitle').textContent = 'Editar gift card';
+  document.getElementById('editId').value = c.id;
+  document.getElementById('fCompany').value = c.company || '';
+  document.getElementById('fName').value = c.name;
+  document.getElementById('fValue').value = c.value;
+  document.getElementById('fCurrency').value = c.currency || 'R$';
+  document.getElementById('fCode').value = c.code || '';
+  document.getElementById('fPin').value = c.pin || '';
+  document.getElementById('formOverlay').classList.add('show');
+}
+
+async function saveCard(){
+  const company = document.getElementById('fCompany').value.trim();
+  const name = document.getElementById('fName').value.trim();
+  const value = parseFloat(document.getElementById('fValue').value) || 0;
+  const currency = document.getElementById('fCurrency').value;
+  const code = document.getElementById('fCode').value.trim();
+  const pin = document.getElementById('fPin').value.trim();
+  const editId = document.getElementById('editId').value;
+
+  if(!name){ showToast('Dá um nome pro cartão.'); return; }
+  if(!code){ showToast('Informe o número/código do cartão.'); return; }
+
+  const body = { company, name, value, currency, code, pin };
+  try{
+    if(editId){
+      await fetch('/api/cards', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({...body, id: editId}) });
+    } else {
+      await fetch('/api/cards', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    }
+    expandedCompanies.add(company || 'Outros');
+    await loadCards();
+    closeForm();
+    showToast('Salvo!');
+  }catch(e){ showToast('Não consegui salvar. Tente de novo.'); }
+}
+
+async function deleteCard(id){
+  if(!confirm('Excluir este gift card?')) return;
+  await fetch('/api/cards?id=' + encodeURIComponent(id), { method:'DELETE' });
+  await loadCards();
+}
+
+function openUse(id){
+  const c = cards.find(x => x.id === id);
+  if(!c) return;
+  const body = document.getElementById('useBody');
+  let mediaHtml = `<div class="barcode-wrap"><svg id="barcodeSvg"></svg></div><div class="use-code">${c.code}</div>`;
+  if(c.pin) mediaHtml += `<div class="pin-box"><span class="pin-label">PIN</span><span class="pin-value">${escapeHtml(c.pin)}</span></div>`;
+  body.innerHTML = `
+    ${c.company ? `<p class="eyebrow" style="margin-bottom:2px;">${escapeHtml(c.company)}</p>` : ''}
+    <p class="use-name">${escapeHtml(c.name)}</p>
+    <p class="use-value">${fmtMoney(c.value, c.currency)}</p>
+    ${mediaHtml}
+    <button class="btn btn-primary" style="margin-top:18px; max-width:240px;" onclick="openDebit('${c.id}')">Registrar valor usado</button>
+    <p class="hint">Aumente o brilho da tela para o leitor reconhecer melhor.</p>`;
+  document.getElementById('useScreen').classList.add('show');
+  try{
+    JsBarcode('#barcodeSvg', c.code, { format:'CODE128', lineColor:'#1A1A1A', width:2.4, height:90, displayValue:false, margin:8 });
+  }catch(e){
+    document.querySelector('.barcode-wrap').innerHTML = '<p style="font-size:13px;color:#B3402A;">Não consegui gerar o código de barras.</p>';
+  }
+}
+function closeUse(){ document.getElementById('useScreen').classList.remove('show'); }
+
+function openDebit(id){
+  const c = cards.find(x => x.id === id);
+  if(!c) return;
+  document.getElementById('debitCardId').value = id;
+  document.getElementById('debitCardInfo').textContent = `${c.name} · saldo atual ${fmtMoney(c.value, c.currency)}`;
+  document.getElementById('debitAmount').value = '';
+  document.getElementById('debitOverlay').classList.add('show');
+}
+function closeDebit(){ document.getElementById('debitOverlay').classList.remove('show'); }
+
+async function confirmDebit(){
+  const id = document.getElementById('debitCardId').value;
+  const amount = Number(document.getElementById('debitAmount').value);
+  if(!amount || amount <= 0){ showToast('Informe um valor válido.'); return; }
+  const resp = await fetch('/api/cards', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, debit: amount}) });
+  const data = await resp.json();
+  await loadCards();
+  closeDebit();
+  closeUse();
+  const c = cards.find(x => x.id === id);
+  showToast(`Debitado! Novo saldo: ${fmtMoney(data.value, c ? c.currency : 'R$')}`);
+}
+
+checkSession();
+</script>
+</body>
+</html>
