@@ -5,6 +5,23 @@ const {
   parseCookies, setSessionCookie, clearSessionCookie
 } = require('../lib/crypto');
 
+// Rate limiting: max 10 tentativas de login por IP a cada 15 minutos
+const loginAttempts = new Map();
+const LIMIT = 10;
+const WINDOW_MS = 15 * 60 * 1000;
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const entry = loginAttempts.get(ip);
+  if (!entry || now - entry.start > WINDOW_MS) {
+    loginAttempts.set(ip, { count: 1, start: now });
+    return true;
+  }
+  if (entry.count >= LIMIT) return false;
+  entry.count++;
+  return true;
+}
+
 module.exports = async (req, res) => {
   const sql = getSql();
   const action = req.query.action || (req.body && req.body.action);
@@ -28,6 +45,10 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'POST' && action === 'login') {
+      const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+      if (!checkRateLimit(ip)) {
+        return res.status(429).json({ error: 'Muitas tentativas. Aguarde 15 minutos.' });
+      }
       const { email, password } = req.body;
       const normalizedEmail = (email || '').toLowerCase().trim();
       const rows = await sql`SELECT id, password_hash FROM users WHERE email = ${normalizedEmail}`;
@@ -53,6 +74,7 @@ module.exports = async (req, res) => {
 
     return res.status(400).json({ error: 'Ação inválida.' });
   } catch (e) {
+    console.error('[auth]', e);
     return res.status(500).json({ error: 'Erro no servidor.' });
   }
 };

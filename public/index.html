@@ -255,7 +255,7 @@ async function submitAuth(){
       body: JSON.stringify({email, password})
     });
     const data = await resp.json();
-    if(!resp.ok){ errEl.textContent = data.error || 'Erro ao entrar.'; return; }
+    if(!resp.ok){ errEl.textContent = data.error || (resp.status === 429 ? 'Muitas tentativas. Aguarde 15 minutos.' : 'Erro ao entrar.'); return; }
     showApp();
   }catch(e){
     errEl.textContent = 'Não consegui conectar. Tente de novo.';

@@ -75,6 +75,7 @@ module.exports = async (req, res) => {
 
     return res.status(405).json({ error: 'Método não suportado.' });
   } catch (e) {
+    console.error('[cards]', e);
     return res.status(500).json({ error: 'Erro no servidor.' });
   }
 };
