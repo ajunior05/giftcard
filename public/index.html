@@ -122,6 +122,9 @@
   .pin-label{font-size:11.5px; text-transform:uppercase; letter-spacing:0.1em; color:#8A8378; font-weight:700;}
   .pin-value{font-family:'Space Grotesk',monospace; font-weight:700; font-size:17px; letter-spacing:0.06em;}
   .hint{font-size:12.5px; color:#B9B3A6; margin-top:18px;}
+  .logo-wrap{width:72px; height:72px; margin:0 auto 10px; border-radius:16px; overflow:hidden; background:var(--paper-dim); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .company-logo{width:72px; height:72px; object-fit:contain;}
+  .logo-initial{width:72px; height:72px; display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; color:#fff;}
 
   .toast{position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:10px; font-size:13.5px; opacity:0; transition:opacity .2s ease; pointer-events:none; z-index:80;}
   .toast.show{opacity:1;}
@@ -438,6 +441,18 @@ async function deleteCard(id){
   await loadCards();
 }
 
+function logoFor(name) {
+  const domain = name.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '') + '.com';
+  return 'https://logo.clearbit.com/' + domain;
+}
+
+function nameColor(name) {
+  const palette = ['#FF7A00','#1F8A57','#2563EB','#7C3AED','#DB2777','#0891B2','#D97706','#DC2626'];
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffffffff;
+  return palette[Math.abs(h) % palette.length];
+}
+
 function openUse(id){
   const c = cards.find(x => x.id === id);
   if(!c) return;
@@ -445,13 +460,23 @@ function openUse(id){
   let mediaHtml = `<div class="barcode-wrap"><svg id="barcodeSvg"></svg></div><div class="use-code">${c.code}</div>`;
   if(c.pin) mediaHtml += `<div class="pin-box"><span class="pin-label">PIN</span><span class="pin-value">${escapeHtml(c.pin)}</span></div>`;
   body.innerHTML = `
-    ${c.company ? `<p class="eyebrow" style="margin-bottom:2px;">${escapeHtml(c.company)}</p>` : ''}
+    ${c.company ? `<div class="logo-wrap" id="clogo"></div><p class="eyebrow" style="margin-bottom:2px;">${escapeHtml(c.company)}</p>` : ''}
     <p class="use-name">${escapeHtml(c.name)}</p>
     <p class="use-value">${fmtMoney(c.value, c.currency)}</p>
     ${mediaHtml}
     <button class="btn btn-primary" style="margin-top:18px; max-width:240px;" onclick="openDebit('${c.id}')">Registrar valor usado</button>
     <p class="hint">Aumente o brilho da tela para o leitor reconhecer melhor.</p>`;
   document.getElementById('useScreen').classList.add('show');
+  const logoEl = document.getElementById('clogo');
+  if (logoEl && c.company) {
+    const img = new Image();
+    img.className = 'company-logo';
+    img.src = logoFor(c.company);
+    img.onerror = () => {
+      logoEl.innerHTML = `<div class="logo-initial" style="background:${nameColor(c.company)}">${c.company[0].toUpperCase()}</div>`;
+    };
+    logoEl.appendChild(img);
+  }
   try{
     JsBarcode('#barcodeSvg', c.code, { format:'CODE128', lineColor:'#1A1A1A', width:2.4, height:90, displayValue:false, margin:8 });
   }catch(e){
