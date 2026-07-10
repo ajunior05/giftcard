@@ -464,7 +464,7 @@ function openUse(id){
     <p class="use-name">${escapeHtml(c.name)}</p>
     <p class="use-value">${fmtMoney(c.value, c.currency)}</p>
     ${mediaHtml}
-    <button class="btn btn-primary" style="margin-top:18px; max-width:240px;" onclick="openDebit('${c.id}')">Registrar valor usado</button>
+    ${!isOffline ? `<button class="btn btn-primary" style="margin-top:18px; max-width:240px;" onclick="openDebit('${c.id}')">Registrar valor usado</button>` : ''}
     <p class="hint">Aumente o brilho da tela para o leitor reconhecer melhor.</p>`;
   document.getElementById('useScreen').classList.add('show');
   const logoEl = document.getElementById('clogo');
@@ -486,6 +486,7 @@ function openUse(id){
 function closeUse(){ document.getElementById('useScreen').classList.remove('show'); }
 
 function openDebit(id){
+  if(isOffline){ showToast('Sem conexão — débito indisponível offline.'); return; }
   const c = cards.find(x => x.id === id);
   if(!c) return;
   document.getElementById('debitCardId').value = id;
@@ -519,13 +520,18 @@ async function confirmDebit(){
   const id = document.getElementById('debitCardId').value;
   const amount = Number(document.getElementById('debitAmount').value);
   if(!amount || amount <= 0){ showToast('Informe um valor válido.'); return; }
-  const resp = await fetch('/api/cards', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, debit: amount}) });
-  const data = await resp.json();
-  await loadCards();
-  closeDebit();
-  closeUse();
-  const c = cards.find(x => x.id === id);
-  showToast(`Debitado! Novo saldo: ${fmtMoney(data.value, c ? c.currency : 'US$')}`);
+  try{
+    const resp = await fetch('/api/cards', { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, debit: amount}) });
+    if(!resp.ok){ showToast('Erro ao debitar. Tente de novo.'); return; }
+    const data = await resp.json();
+    await loadCards();
+    closeDebit();
+    closeUse();
+    const c = cards.find(x => x.id === id);
+    showToast(`Debitado! Novo saldo: ${fmtMoney(data.value, c ? c.currency : 'US$')}`);
+  }catch(e){
+    showToast('Sem conexão — conecte-se e tente de novo.');
+  }
 }
 
 // ---------- OCR / Scan ----------
