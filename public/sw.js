@@ -1,5 +1,5 @@
-const SHELL = 'gc-shell-v1';
-const DATA  = 'gc-data-v1';
+const SHELL = 'gc-shell-v2';
+const DATA  = 'gc-data-v2';
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -23,19 +23,16 @@ self.addEventListener('fetch', e => {
 
   if (request.method !== 'GET') return;
 
-  // CDN externo: cache-first (fontes, JsBarcode, Tesseract)
   if (url.origin !== self.location.origin) {
     e.respondWith(cacheFirst(request, SHELL));
     return;
   }
 
-  // API GET: network-first, fallback para cache
   if (url.pathname.startsWith('/api/')) {
     e.respondWith(networkFirst(request, DATA));
     return;
   }
 
-  // Assets locais (index.html, ícone...): network-first
   e.respondWith(networkFirst(request, SHELL));
 });
 
@@ -51,7 +48,7 @@ async function networkFirst(req, cacheName) {
     const cached = await caches.match(req);
     if (cached) return cached;
     return new Response(
-      JSON.stringify({ cards: [] }),
+      JSON.stringify({ cards: [], roteiros: [] }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   }
