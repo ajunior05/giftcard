@@ -463,6 +463,36 @@ tailwind.config = {
   </div>
 </div>
 
+<div class="overlay" id="editRoteiroOverlay">
+  <div class="sheet-inner w-full max-w-[520px] mx-auto bg-paper rounded-t-3xl px-5 pt-3 pb-8">
+    <div class="w-9 h-1 bg-line rounded-full mx-auto mb-5"></div>
+    <h2 class="font-grotesk font-bold text-xl text-ink mb-5">Editar roteiro</h2>
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Título *</label>
+    <input type="text" id="erTitulo" placeholder="Ex: Viagem Europa 2027"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base mb-4">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Destino</label>
+    <input type="text" id="erDestino" placeholder="Ex: Paris, França"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base mb-4">
+    <div class="flex gap-3 mb-4">
+      <div class="flex-1">
+        <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Início</label>
+        <input type="date" id="erInicio" class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+      </div>
+      <div class="flex-1">
+        <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Fim</label>
+        <input type="date" id="erFim" class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+      </div>
+    </div>
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Adultos</label>
+    <input type="number" id="erAdultos" value="1" min="1" max="20"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base mb-6">
+    <div class="flex gap-3">
+      <button onclick="closeEditRoteiro()" class="flex-1 py-3.5 rounded-xl bg-paper-dim text-ink font-semibold text-sm cursor-pointer border-0">Cancelar</button>
+      <button onclick="saveEditRoteiro()" class="flex-1 py-3.5 rounded-xl bg-brand text-white font-semibold text-sm cursor-pointer border-0">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast bg-ink text-white px-5 py-3 rounded-xl text-sm font-medium" id="toast"></div>
 
 <script>
@@ -910,9 +940,14 @@ function renderRoteiroDetail(){
     <div class="bg-blue-50 rounded-2xl p-4 mb-4">
       <div class="flex items-start justify-between mb-1">
         <p class="font-grotesk font-bold text-lg text-blue-700 m-0">🌴 ${esc(currentRoteiro.destino||'Orlando')}</p>
-        <button onclick="deleteRoteiro()"
-                class="ml-2 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg border-0 bg-transparent cursor-pointer text-base text-blue-300 hover:text-red-500 transition-colors"
-                title="Excluir roteiro">🗑️</button>
+        <div class="flex gap-1 ml-2">
+          <button onclick="openEditRoteiro()"
+                  class="w-7 h-7 flex items-center justify-center rounded-lg border-0 bg-transparent cursor-pointer text-base text-blue-400 hover:text-blue-700 transition-colors"
+                  title="Editar roteiro">✏️</button>
+          <button onclick="deleteRoteiro()"
+                  class="w-7 h-7 flex items-center justify-center rounded-lg border-0 bg-transparent cursor-pointer text-base text-blue-300 hover:text-red-500 transition-colors"
+                  title="Excluir roteiro">🗑️</button>
+        </div>
       </div>
       <div class="flex items-end justify-between">
         <p class="text-sm text-blue-500 m-0">${fmtDateFull(currentRoteiro.data_inicio)} – ${fmtDateFull(currentRoteiro.data_fim)} · ${currentRoteiro.adultos} adulto${currentRoteiro.adultos>1?'s':''}</p>
@@ -1093,6 +1128,37 @@ async function saveNovoRoteiro(){
     currentRoteiroId=id;
     await loadRoteiro();
     showToast('Roteiro criado!');
+  }catch(e){showToast('Sem conexão — tente de novo.');}
+}
+function openEditRoteiro(){
+  if(!currentRoteiro) return;
+  document.getElementById('erTitulo').value=currentRoteiro.titulo||'';
+  document.getElementById('erDestino').value=currentRoteiro.destino||'';
+  document.getElementById('erInicio').value=currentRoteiro.data_inicio||'';
+  document.getElementById('erFim').value=currentRoteiro.data_fim||'';
+  document.getElementById('erAdultos').value=currentRoteiro.adultos||1;
+  document.getElementById('editRoteiroOverlay').classList.add('show');
+}
+function closeEditRoteiro(){ document.getElementById('editRoteiroOverlay').classList.remove('show'); }
+async function saveEditRoteiro(){
+  const titulo=document.getElementById('erTitulo').value.trim();
+  if(!titulo){showToast('Informe o título.');return;}
+  const body={
+    id:currentRoteiroId, action:'editRoteiro', titulo,
+    destino:document.getElementById('erDestino').value.trim(),
+    dataInicio:document.getElementById('erInicio').value||null,
+    dataFim:document.getElementById('erFim').value||null,
+    adultos:parseInt(document.getElementById('erAdultos').value)||1
+  };
+  try{
+    const resp=await fetch('/api/roteiros',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!resp.ok){showToast('Erro ao salvar.');return;}
+    currentRoteiro.titulo=body.titulo; currentRoteiro.destino=body.destino;
+    currentRoteiro.data_inicio=body.dataInicio; currentRoteiro.data_fim=body.dataFim;
+    currentRoteiro.adultos=body.adultos;
+    const r=roteiros.find(x=>x.id===currentRoteiroId);
+    if(r){r.titulo=body.titulo;}
+    closeEditRoteiro(); renderRoteiroDetail(); showToast('Roteiro atualizado!');
   }catch(e){showToast('Sem conexão — tente de novo.');}
 }
 async function switchRoteiro(id){

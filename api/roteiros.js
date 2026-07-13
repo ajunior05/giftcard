@@ -67,8 +67,25 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'PATCH') {
-      const { id, action, concluida, notas, titulo, horarioInicio, horarioFim, endereco } = req.body;
+      const { id, action, concluida, notas, titulo, horarioInicio, horarioFim, endereco,
+              destino, dataInicio, dataFim, adultos } = req.body;
       if (!id) return res.status(400).json({ error: 'id obrigatório.' });
+
+      if (action === 'editRoteiro') {
+        if (!titulo) return res.status(400).json({ error: 'Título obrigatório.' });
+        const check = await sql`SELECT id FROM roteiros WHERE id = ${id} AND user_id = ${userId}`;
+        if (!check.length) return res.status(404).json({ error: 'Não encontrado.' });
+        await sql`
+          UPDATE roteiros
+          SET titulo      = ${titulo},
+              destino     = ${destino || ''},
+              data_inicio = ${dataInicio || null},
+              data_fim    = ${dataFim || null},
+              adultos     = ${adultos || 1}
+          WHERE id = ${id}`;
+        return res.status(200).json({ ok: true });
+      }
+
       const check = await sql`
         SELECT a.id FROM atividades_roteiro a
         JOIN roteiros r ON r.id = a.roteiro_id
