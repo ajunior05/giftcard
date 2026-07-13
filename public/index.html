@@ -122,7 +122,7 @@ tailwind.config = {
         <span class="text-2xl text-line font-light">›</span>
       </button>
       <!-- Roteiro -->
-      <button onclick="goToRoteiro()"
+      <button onclick="goToRoteiroList()"
               class="flex items-center gap-4 p-5 rounded-2xl bg-blue-50 w-full text-left active:scale-98 transition-transform cursor-pointer">
         <div class="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center text-3xl flex-shrink-0">🗓️</div>
         <div class="flex-1 min-w-0">
@@ -142,6 +142,22 @@ tailwind.config = {
         <span class="text-2xl text-green-200 font-light">›</span>
       </button>
     </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     ROTEIRO LIST
+══════════════════════════════════ -->
+<div id="roteiroListScreen" class="screen hidden">
+  <header class="flex items-center gap-3 px-5 pt-5 pb-3">
+    <button onclick="navigate('homeScreen')"
+            class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-xl text-ink cursor-pointer flex-shrink-0">‹</button>
+    <h2 class="font-grotesk font-bold text-xl text-ink flex-1 m-0">Roteiros</h2>
+    <button onclick="openNovoRoteiro()"
+            class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-xl text-ink cursor-pointer flex-shrink-0">+</button>
+  </header>
+  <div class="flex-1 px-5 pb-10 overflow-y-auto" id="roteiroListBody">
+    <p class="text-center text-ink-light py-10">Carregando...</p>
   </div>
 </div>
 
@@ -181,12 +197,10 @@ tailwind.config = {
 ══════════════════════════════════ -->
 <div id="roteiroScreen" class="screen hidden">
   <header class="flex items-center gap-3 px-5 pt-5 pb-3">
-    <button onclick="navigate('homeScreen')"
+    <button onclick="navigate('roteiroListScreen')"
             class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-xl text-ink cursor-pointer flex-shrink-0">‹</button>
     <h2 class="font-grotesk font-bold text-xl text-ink flex-1 m-0">Roteiro</h2>
     <span id="roteiroProgressBadge" class="text-sm font-bold text-blue-600"></span>
-    <button onclick="openNovoRoteiro()"
-            class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-xl text-ink cursor-pointer flex-shrink-0">+</button>
   </header>
   <div class="flex-1 px-5 pb-10 overflow-y-auto" id="roteiroBody">
     <p class="text-center text-ink-light py-10">Carregando...</p>
@@ -602,6 +616,80 @@ function navigate(id){
 }
 function goToGiftCards(){ navigate('gcScreen'); renderCards(); updateOfflineBar(); }
 function goToRoteiro(){ navigate('roteiroScreen'); loadRoteiro(); }
+async function goToRoteiroList(){
+  navigate('roteiroListScreen');
+  await loadRoteiros();
+  renderRoteiroList();
+}
+function renderRoteiroList(){
+  const el=document.getElementById('roteiroListBody');
+  if(!roteiros.length){
+    el.innerHTML=`
+      <div class="text-center py-16 px-4">
+        <div class="text-5xl mb-4">🗓️</div>
+        <p class="font-grotesk font-bold text-lg text-ink mb-1">Nenhum roteiro</p>
+        <p class="text-sm text-ink-light mb-6">Crie um roteiro ou importe o de Orlando.</p>
+        <button onclick="openNovoRoteiro()"
+                class="w-full py-4 rounded-2xl bg-brand text-white font-grotesk font-bold text-base border-0 cursor-pointer mb-3">
+          + Criar novo roteiro
+        </button>
+        <button onclick="importarOrlando()"
+                class="w-full py-4 rounded-2xl bg-blue-600 text-white font-grotesk font-bold text-base border-0 cursor-pointer">
+          ✈️ Importar Roteiro Orlando 2026
+        </button>
+      </div>`;
+    updateRoteiroHomeSub(); return;
+  }
+  el.innerHTML=roteiros.map(r=>{
+    const dateStr=r.data_inicio&&r.data_fim
+      ?`${fmtDateFull(r.data_inicio)} – ${fmtDateFull(r.data_fim)}`
+      :r.data_inicio?`A partir de ${fmtDateFull(r.data_inicio)}`:'Sem datas';
+    const sub=r.destino?esc(r.destino):dateStr;
+    return `
+    <div class="flex items-center gap-4 p-5 rounded-2xl bg-white border border-line shadow-sm mb-3 cursor-pointer active:scale-98 transition-transform"
+         onclick="openRoteiroFromList('${r.id}')">
+      <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-3xl flex-shrink-0">🗓️</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-grotesk font-bold text-base text-ink m-0 mb-0.5">${esc(r.titulo)}</p>
+        <p class="text-sm text-ink-light m-0 truncate">${sub}</p>
+      </div>
+      <button onclick="event.stopPropagation();deleteRoteiroById('${r.id}')"
+              class="w-8 h-8 flex items-center justify-center rounded-lg border-0 bg-transparent cursor-pointer text-base text-ink-light hover:text-red-500 transition-colors flex-shrink-0"
+              title="Excluir">🗑️</button>
+      <span class="text-2xl text-line font-light">›</span>
+    </div>`;
+  }).join('')+`
+    <div class="pt-1 pb-4">
+      <button onclick="openNovoRoteiro()"
+              class="w-full py-4 rounded-2xl border border-dashed border-line bg-transparent text-ink-mid font-grotesk font-bold text-sm cursor-pointer">
+        + Novo roteiro
+      </button>
+    </div>`;
+  updateRoteiroHomeSub();
+}
+async function openRoteiroFromList(id){
+  navigate('roteiroScreen');
+  currentRoteiroId=id; expandedDays=new Set();
+  try{
+    const r=await fetch('/api/roteiros?id='+id);
+    const d=await r.json();
+    currentRoteiro=d.roteiro; currentAtividades=d.atividades||[];
+    const todayNum=getTodayDayNumber();
+    if(todayNum) expandedDays.add(todayNum);
+    else if(currentAtividades.length) expandedDays.add(currentAtividades[0].dia_numero);
+    renderRoteiroDetail();
+  }catch(e){renderRoteiroEmpty();}
+}
+async function deleteRoteiroById(id){
+  if(!confirm('Excluir este roteiro e todas as suas atividades?')) return;
+  try{
+    const resp=await fetch('/api/roteiros?id='+encodeURIComponent(id),{method:'DELETE'});
+    if(!resp.ok){showToast('Erro ao excluir.');return;}
+    roteiros=roteiros.filter(r=>r.id!==id);
+    if(currentRoteiroId===id){currentRoteiro=null;currentAtividades=[];currentRoteiroId=null;}
+    renderRoteiroList(); showToast('Roteiro excluído.');
+  }catch(e){showToast('Sem conexão — tente de novo.');}
+}
 function goToConversor(){ navigate('conversorScreen'); initConversor(); }
 
 // ════════════════════════════════
@@ -664,9 +752,13 @@ function updateGcHomeSub(){
 }
 function updateRoteiroHomeSub(){
   const el=document.getElementById('roteiroHomeSub');
-  if(!roteiros.length){el.textContent='Toque para importar o roteiro';return;}
-  const r=roteiros[0]; const done=r._done||0,total=r._total||37;
-  el.textContent=`${done}/${total} atividades concluídas`;
+  if(!roteiros.length){el.textContent='Nenhum roteiro criado';return;}
+  if(roteiros.length===1){
+    const r=roteiros[0];
+    el.textContent=r.destino||r.titulo;
+  } else {
+    el.textContent=`${roteiros.length} roteiros`;
+  }
 }
 async function fetchQuickRate(){
   try{
@@ -912,15 +1004,11 @@ function renderRoteiroEmpty(){
   document.getElementById('roteiroBody').innerHTML=`
     <div class="text-center py-16 px-4">
       <div class="text-5xl mb-4">🗓️</div>
-      <p class="font-grotesk font-bold text-lg text-ink mb-1">Nenhum roteiro</p>
-      <p class="text-sm text-ink-light mb-6">Crie um roteiro ou importe o roteiro de Orlando.</p>
-      <button onclick="openNovoRoteiro()"
-              class="w-full py-4 rounded-2xl bg-brand text-white font-grotesk font-bold text-base border-0 cursor-pointer mb-3">
-        + Criar novo roteiro
-      </button>
-      <button onclick="importarOrlando()"
-              class="w-full py-4 rounded-2xl bg-blue-600 text-white font-grotesk font-bold text-base border-0 cursor-pointer">
-        ✈️ Importar Roteiro Orlando 2026
+      <p class="font-grotesk font-bold text-lg text-ink mb-1">Sem atividades</p>
+      <p class="text-sm text-ink-light mb-6">Este roteiro ainda não tem atividades. Adicione o primeiro dia.</p>
+      <button onclick="navigate('roteiroListScreen')"
+              class="w-full py-4 rounded-2xl bg-paper-dim text-ink font-grotesk font-bold text-base border-0 cursor-pointer">
+        ‹ Voltar para lista
       </button>
     </div>`;
 }
@@ -1020,16 +1108,7 @@ function renderRoteiroDetail(){
       </button>
     </div>`;
 
-  const selectorHtml=roteiros.length>1?`
-    <div class="flex gap-2 overflow-x-auto pb-1 mb-4" style="scrollbar-width:none">
-      ${roteiros.map(r=>`
-        <button onclick="switchRoteiro('${r.id}')"
-                class="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border-0 cursor-pointer whitespace-nowrap
-                       ${r.id===currentRoteiroId?'bg-blue-600 text-white':'bg-paper-dim text-ink'}">
-          ${esc(r.titulo)}
-        </button>`).join('')}
-    </div>`:'';
-  document.getElementById('roteiroBody').innerHTML=selectorHtml+hero+daysHtml+novoDia;
+  document.getElementById('roteiroBody').innerHTML=hero+daysHtml+novoDia;
   const cur=roteiros.find(r=>r.id===currentRoteiroId);
   if(cur){cur._done=done;cur._total=total;updateRoteiroHomeSub();}
 }
@@ -1126,6 +1205,7 @@ async function saveNovoRoteiro(){
     const {id}=await resp.json();
     closeNovoRoteiro();
     currentRoteiroId=id;
+    navigate('roteiroScreen');
     await loadRoteiro();
     showToast('Roteiro criado!');
   }catch(e){showToast('Sem conexão — tente de novo.');}
@@ -1174,13 +1254,8 @@ async function switchRoteiro(id){
   }catch(e){showToast('Erro ao carregar roteiro.');}
 }
 async function deleteRoteiro(){
-  if(!confirm('Excluir este roteiro e todas as suas atividades?')) return;
-  try{
-    const resp=await fetch('/api/roteiros?id='+encodeURIComponent(currentRoteiroId),{method:'DELETE'});
-    if(!resp.ok){showToast('Erro ao excluir.');return;}
-    currentRoteiro=null; currentAtividades=[]; currentRoteiroId=null; roteiros=[];
-    renderRoteiroEmpty(); showToast('Roteiro excluído.');
-  }catch(e){showToast('Sem conexão — tente de novo.');}
+  await deleteRoteiroById(currentRoteiroId);
+  if(!currentRoteiroId) navigate('roteiroListScreen');
 }
 async function deleteDay(dn){
   if(!confirm(`Excluir o Dia ${dn} e todas as suas atividades?`)) return;
@@ -1198,7 +1273,7 @@ async function importarOrlando(){
   try{
     const r=await fetch('/api/roteiros',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ORLANDO_TRIP)});
     if(!r.ok){showToast('Erro ao importar.');if(btn){btn.textContent='✈️ Importar Roteiro Orlando 2026';btn.disabled=false;}return;}
-    showToast('Roteiro importado!'); await loadRoteiro();
+    showToast('Roteiro importado!'); navigate('roteiroScreen'); await loadRoteiro();
   }catch(e){showToast('Sem conexão — tente de novo.');if(btn){btn.textContent='✈️ Importar Roteiro Orlando 2026';btn.disabled=false;}}
 }
 function openAddAct(diaNum,dataDia,diaSemana){
