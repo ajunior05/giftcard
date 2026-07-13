@@ -870,14 +870,19 @@ function renderRoteiroDetail(){
   const todayNum=getTodayDayNumber();
 
   const hero=`
-    <div class="bg-blue-50 rounded-2xl p-4 mb-4 flex items-center justify-between">
-      <div>
+    <div class="bg-blue-50 rounded-2xl p-4 mb-4">
+      <div class="flex items-start justify-between mb-1">
         <p class="font-grotesk font-bold text-lg text-blue-700 m-0">🌴 ${esc(currentRoteiro.destino||'Orlando')}</p>
-        <p class="text-sm text-blue-500 mt-0.5 m-0">${fmtDateFull(currentRoteiro.data_inicio)} – ${fmtDateFull(currentRoteiro.data_fim)} · ${currentRoteiro.adultos} adulto${currentRoteiro.adultos>1?'s':''}</p>
+        <button onclick="deleteRoteiro()"
+                class="ml-2 flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg border-0 bg-transparent cursor-pointer text-base text-blue-300 hover:text-red-500 transition-colors"
+                title="Excluir roteiro">🗑️</button>
       </div>
-      <div class="text-right">
-        <p class="font-grotesk font-bold text-3xl text-blue-700 m-0 leading-none">${done}</p>
-        <p class="text-xs text-blue-500 m-0">de ${total}</p>
+      <div class="flex items-end justify-between">
+        <p class="text-sm text-blue-500 m-0">${fmtDateFull(currentRoteiro.data_inicio)} – ${fmtDateFull(currentRoteiro.data_fim)} · ${currentRoteiro.adultos} adulto${currentRoteiro.adultos>1?'s':''}</p>
+        <div class="text-right flex-shrink-0 ml-4">
+          <p class="font-grotesk font-bold text-3xl text-blue-700 m-0 leading-none">${done}</p>
+          <p class="text-xs text-blue-500 m-0">de ${total}</p>
+        </div>
       </div>
     </div>
     <div class="w-full h-2 bg-blue-100 rounded-full mb-5">
@@ -908,6 +913,9 @@ function renderRoteiroDetail(){
           <p class="text-xs text-ink-light m-0 truncate">${acts.map(a=>getActivityIcon(a.titulo)).join(' ')} ${acts.map(a=>esc(a.titulo)).join(', ')}</p>
         </div>
         <span class="text-xs text-ink-light whitespace-nowrap">${dayDone}/${acts.length}</span>
+        <button onclick="event.stopPropagation();deleteDay(${dn})"
+                class="w-6 h-6 flex items-center justify-center rounded border-0 bg-transparent cursor-pointer text-xs text-ink-light hover:text-red-500 transition-colors p-0 leading-none"
+                title="Excluir este dia">🗑️</button>
         <span class="day-chevron text-xs text-ink-light">▶</span>
       </div>
       <div class="day-acts border-t border-line">
@@ -1008,6 +1016,25 @@ async function deleteAtividade(id){
     if(!resp.ok){showToast('Erro ao excluir.');return;}
     currentAtividades=currentAtividades.filter(a=>a.id!==id);
     closeEditAct(); renderRoteiroDetail(); showToast('Atividade excluída.');
+  }catch(e){showToast('Sem conexão — tente de novo.');}
+}
+async function deleteRoteiro(){
+  if(!confirm('Excluir este roteiro e todas as suas atividades?')) return;
+  try{
+    const resp=await fetch('/api/roteiros?id='+encodeURIComponent(currentRoteiroId),{method:'DELETE'});
+    if(!resp.ok){showToast('Erro ao excluir.');return;}
+    currentRoteiro=null; currentAtividades=[]; currentRoteiroId=null; roteiros=[];
+    renderRoteiroEmpty(); showToast('Roteiro excluído.');
+  }catch(e){showToast('Sem conexão — tente de novo.');}
+}
+async function deleteDay(dn){
+  if(!confirm(`Excluir o Dia ${dn} e todas as suas atividades?`)) return;
+  try{
+    const resp=await fetch('/api/roteiros?roteiroId='+encodeURIComponent(currentRoteiroId)+'&diaNumero='+dn,{method:'DELETE'});
+    if(!resp.ok){showToast('Erro ao excluir.');return;}
+    currentAtividades=currentAtividades.filter(a=>a.dia_numero!==dn);
+    expandedDays.delete(dn);
+    renderRoteiroDetail(); showToast('Dia '+dn+' excluído.');
   }catch(e){showToast('Sem conexão — tente de novo.');}
 }
 async function importarOrlando(){

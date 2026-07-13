@@ -93,12 +93,18 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'DELETE') {
-      const { id, atividadeId } = req.query;
+      const { id, atividadeId, roteiroId, diaNumero } = req.query;
       if (atividadeId) {
         await sql`
           DELETE FROM atividades_roteiro
           WHERE id = ${atividadeId}
             AND roteiro_id IN (SELECT id FROM roteiros WHERE user_id = ${userId})`;
+        return res.status(200).json({ ok: true });
+      }
+      if (diaNumero && roteiroId) {
+        const check = await sql`SELECT id FROM roteiros WHERE id = ${roteiroId} AND user_id = ${userId}`;
+        if (!check.length) return res.status(403).json({ error: 'Não autorizado.' });
+        await sql`DELETE FROM atividades_roteiro WHERE roteiro_id = ${roteiroId} AND dia_numero = ${diaNumero}`;
         return res.status(200).json({ ok: true });
       }
       if (!id) return res.status(400).json({ error: 'id obrigatório.' });
