@@ -10,339 +10,205 @@
 <meta name="apple-mobile-web-app-title" content="Viagem">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.12.1/JsBarcode.all.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --orange:#FF7A00; --orange-deep:#E65C00; --orange-light:#FFF4EC;
-  --ink:#1A1A1A; --ink-mid:#4A4540; --ink-light:#8A8378;
-  --paper:#FBF9F6; --paper-dim:#F0ECE5; --line:#E2DDD3;
-  --ok:#1F8A57; --ok-light:#E8F5EE;
-  --blue:#2563EB; --blue-light:#EBF0FF;
-  --purple:#7C3AED; --purple-light:#F3F0FF;
-  --red:#B3402A; --red-light:#FEF0EE;
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        brand:  { DEFAULT:'#FF7A00', deep:'#E65C00', light:'#FFF4EC' },
+        ink:    { DEFAULT:'#1A1A1A', mid:'#4A4540',  light:'#8A8378'  },
+        paper:  { DEFAULT:'#FBF9F6', dim:'#F0ECE5'  },
+        line:   '#E2DDD3',
+        ok:     { DEFAULT:'#1F8A57', light:'#E8F5EE' },
+      },
+      fontFamily: { grotesk: ['Space Grotesk','sans-serif'] },
+      scale: { 98: '.98' },
+    }
+  }
 }
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{margin:0;padding:0;background:var(--paper);color:var(--ink);font-family:'Inter',sans-serif;min-height:100vh;}
-h1,h2,h3,.num{font-family:'Space Grotesk',sans-serif;}
-a{text-decoration:none;}
-
-/* ── Screens ── */
-.screen{min-height:100vh;display:flex;flex-direction:column;max-width:520px;margin:0 auto;}
-.screen.hidden{display:none;}
-
-/* ── Auth ── */
-.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px 24px;}
-.auth-box{width:100%;max-width:360px;}
-.auth-logo{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--orange-deep);margin:0 0 28px;}
-.auth-box h1{font-size:28px;margin:0 0 6px;font-weight:700;}
-.auth-box .sub{color:var(--ink-light);font-size:14px;margin:0 0 28px;}
-.auth-error{color:var(--red);font-size:13.5px;margin:10px 0 0;min-height:16px;}
-.auth-toggle{text-align:center;margin-top:20px;font-size:13.5px;color:var(--ink-light);}
-.auth-toggle a{color:var(--orange-deep);font-weight:600;cursor:pointer;}
-
-/* ── Shared header ── */
-.screen-header{display:flex;align-items:center;gap:12px;padding:20px 20px 14px;}
-.back-btn{width:36px;height:36px;border:none;background:var(--paper-dim);border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.screen-title{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;flex:1;margin:0;}
-.header-action{border:none;background:var(--orange);color:#fff;border-radius:10px;padding:8px 14px;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;}
-.header-action.ghost{background:var(--paper-dim);color:var(--ink-mid);}
-
-/* ── Home screen ── */
-.home-wrap{flex:1;display:flex;flex-direction:column;padding:0 0 32px;}
-.home-header{display:flex;align-items:flex-start;justify-content:space-between;padding:28px 20px 0;}
-.home-eyebrow{font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--orange-deep);font-weight:700;margin:0 0 4px;}
-.home-title{font-size:28px;font-weight:700;margin:0 0 4px;}
-.home-meta{font-size:13px;color:var(--ink-light);margin:0;}
-.logout-btn{background:var(--paper-dim);border:none;border-radius:10px;padding:9px 14px;font-size:12.5px;font-weight:600;color:var(--ink-mid);cursor:pointer;white-space:nowrap;margin-top:4px;}
-.countdown{margin:16px 20px 0;padding:11px 16px;background:var(--orange-light);border-radius:12px;font-size:14px;font-weight:600;color:var(--orange-deep);display:none;}
-.countdown.show{display:block;}
-.module-grid{padding:20px 20px 0;display:flex;flex-direction:column;gap:12px;}
-.module-card{display:flex;align-items:center;gap:16px;padding:20px;border-radius:18px;border:none;width:100%;text-align:left;cursor:pointer;transition:transform .12s ease,box-shadow .12s ease;}
-.module-card:active{transform:scale(0.98);}
-.mod-icon{font-size:28px;width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.mod-info{flex:1;min-width:0;}
-.mod-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;margin:0 0 3px;}
-.mod-sub{font-size:13px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.mod-arrow{font-size:22px;color:rgba(0,0,0,.2);font-weight:300;}
-.mod-gc{background:#fff;border:1.5px solid var(--line);box-shadow:0 2px 16px rgba(0,0,0,.06);}
-.mod-gc .mod-icon{background:var(--orange-light);}
-.mod-gc .mod-sub{color:var(--ink-light);}
-.mod-roteiro{background:var(--blue-light);}
-.mod-roteiro .mod-icon{background:rgba(37,99,235,.12);}
-.mod-roteiro .mod-title{color:#1d4ed8;}
-.mod-roteiro .mod-sub{color:#3b6fd4;}
-.mod-conversor{background:var(--ok-light);}
-.mod-conversor .mod-icon{background:rgba(31,138,87,.12);}
-.mod-conversor .mod-title{color:#166543;}
-.mod-conversor .mod-sub{color:#2a7a57;}
-
-/* ── Offline bar ── */
-.offline-bar{background:#7A3520;color:#fff;text-align:center;font-size:13px;font-weight:600;padding:9px 16px;display:none;align-items:center;justify-content:center;gap:12px;}
-.offline-bar.show{display:flex;}
-.clear-cache-btn{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);border-radius:7px;color:#fff;font-size:12px;font-weight:600;padding:5px 11px;cursor:pointer;}
-
-/* ── Gift cards ── */
-.search-wrap{padding:0 20px 12px;}
-.search-input{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-family:'Inter';font-size:15px;color:var(--ink);}
-.search-input:focus{outline:none;border-color:var(--orange);}
-.total-strip{display:flex;justify-content:space-between;align-items:baseline;margin:0 20px 4px;padding:16px 18px;background:var(--ink);border-radius:14px;color:var(--paper);}
-.total-strip .label{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#B9B3A6;}
-.total-strip .value{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:var(--orange);}
-.gc-list{flex:1;padding:8px 20px 80px;}
-.empty{text-align:center;padding:60px 20px;color:var(--ink-light);}
-.empty .icon{font-size:40px;margin-bottom:10px;}
-.company-group{margin-top:14px;}
-.company-group:first-child{margin-top:6px;}
-.company-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:12px;background:#fff;border:1px solid var(--line);cursor:pointer;user-select:none;}
-.company-header-left{display:flex;align-items:center;gap:10px;}
-.chevron{font-size:12px;color:var(--ink-light);transition:transform .18s ease;}
-.company-group.expanded .chevron{transform:rotate(90deg);}
-.company-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--orange-deep);}
-.company-count{font-size:11.5px;color:var(--ink-light);font-weight:500;}
-.company-subtotal{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14.5px;}
-.company-cards{display:none;padding-top:10px;}
-.company-group.expanded .company-cards{display:block;}
-.card{position:relative;background:#fff;border-radius:16px;margin:12px 0;border:1px solid var(--line);overflow:hidden;}
-.card-main{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;cursor:pointer;}
-.card-name{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:17px;margin:0 0 3px;}
-.card-sub{font-size:12.5px;color:var(--ink-light);margin:0;}
-.card-value{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;color:var(--orange-deep);white-space:nowrap;margin-left:12px;}
-.perforation{position:relative;height:0;border-top:2px dashed var(--line);margin:0 18px;}
-.perforation::before,.perforation::after{content:"";position:absolute;top:-9px;width:18px;height:18px;background:var(--paper);border-radius:50%;}
-.perforation::before{left:-27px;}.perforation::after{right:-27px;}
-.card-actions{display:flex;gap:6px;padding:12px 18px 16px;flex-wrap:wrap;}
-.gc-add-btn{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);max-width:480px;width:calc(100% - 40px);background:var(--ink);color:#fff;border:none;border-radius:14px;padding:16px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);cursor:pointer;z-index:10;}
-.gc-add-btn span.plus{color:var(--orange);font-size:20px;line-height:0;}
-
-/* ── Buttons ── */
-.btn{border:none;border-radius:10px;padding:11px 8px;font-family:'Inter';font-weight:600;font-size:13.5px;cursor:pointer;flex:1 1 auto;min-width:78px;}
-.btn:active{transform:scale(0.97);}
-.btn-primary{background:var(--orange);color:#fff;}
-.btn-ghost{background:var(--paper-dim);color:var(--ink);}
-.btn-danger{background:transparent;color:var(--red);}
-.btn-block{width:100%;padding:14px;}
-
-/* ── Inputs ── */
-label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-mid);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.06em;}
-input[type=text],input[type=email],input[type=password],input[type=number],textarea,select{width:100%;padding:13px 14px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-family:'Inter';font-size:15px;color:var(--ink);}
-input:focus,textarea:focus,select:focus{outline:none;border-color:var(--orange);}
-textarea{resize:vertical;min-height:80px;}
-.field-row{display:flex;gap:8px;align-items:stretch;}
-.field-row input{flex:1;min-width:0;}
-.currency-select{width:auto;flex:none;padding:13px 10px;min-width:72px;}
-.paste-btn{flex:none;width:46px;border:1.5px solid var(--line);border-radius:10px;background:var(--paper-dim);font-size:17px;cursor:pointer;}
-.scan-btn{width:100%;padding:11px;border-radius:10px;border:1.5px dashed var(--line);background:var(--paper);font-family:'Inter';font-weight:600;font-size:13.5px;color:var(--ink-mid);cursor:pointer;margin-bottom:6px;}
-.scan-btn:disabled{opacity:.5;cursor:default;}
-
-/* ── Overlays / Sheets ── */
-.overlay{position:fixed;inset:0;background:rgba(20,17,12,.55);display:flex;align-items:flex-end;z-index:70;opacity:0;pointer-events:none;transition:opacity .18s ease;}
-.overlay.show{opacity:1;pointer-events:auto;}
-.sheet{background:var(--paper);width:100%;max-width:520px;margin:0 auto;border-radius:20px 20px 0 0;padding:22px 20px 34px;max-height:88vh;overflow-y:auto;transform:translateY(24px);transition:transform .2s ease;}
-.overlay.show .sheet{transform:translateY(0);}
-.sheet-handle{width:36px;height:4px;background:var(--line);border-radius:2px;margin:0 auto 18px;}
-.sheet h2{font-size:20px;margin:0 0 18px;}
-.sheet-actions{display:flex;gap:10px;margin-top:22px;}
-
-/* ── Gift card use screen ── */
-.use-screen{position:fixed;inset:0;background:#fff;z-index:60;display:none;flex-direction:column;}
-.use-screen.show{display:flex;}
-.use-top{display:flex;align-items:center;justify-content:space-between;padding:18px 18px 6px;}
-.close-btn{background:var(--paper-dim);border:none;width:36px;height:36px;border-radius:50%;font-size:18px;cursor:pointer;}
-.use-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;}
-.use-name{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;margin:0 0 2px;}
-.use-value{color:var(--orange-deep);font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:16px;margin-bottom:22px;}
-.barcode-wrap{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 10px;width:100%;}
-.barcode-wrap svg{width:100%;height:auto;}
-.use-code{font-family:'Space Grotesk',monospace;letter-spacing:.08em;font-size:15px;margin-top:14px;color:var(--ink-light);}
-.pin-box{margin-top:14px;background:var(--paper-dim);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;justify-content:center;}
-.pin-label{font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-light);font-weight:700;}
-.pin-value{font-family:'Space Grotesk',monospace;font-weight:700;font-size:17px;letter-spacing:.06em;}
-.hint{font-size:12.5px;color:#B9B3A6;margin-top:18px;}
-.logo-wrap{width:72px;height:72px;margin:0 auto 10px;border-radius:16px;overflow:hidden;background:var(--paper-dim);display:flex;align-items:center;justify-content:center;}
-.company-logo{width:72px;height:72px;object-fit:contain;}
-.logo-initial{width:72px;height:72px;display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;color:#fff;}
-
-/* ── Roteiro ── */
-.roteiro-body{flex:1;padding:0 20px 40px;overflow-y:auto;}
-.roteiro-hero{background:var(--blue-light);border-radius:16px;padding:18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
-.roteiro-hero-info .hero-dest{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;color:#1d4ed8;}
-.roteiro-hero-info .hero-dates{font-size:13px;color:#3b6fd4;margin-top:3px;}
-.roteiro-progress{text-align:right;}
-.progress-num{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;color:#1d4ed8;}
-.progress-label{font-size:12px;color:#3b6fd4;}
-.progress-bar-wrap{width:100%;height:5px;background:rgba(37,99,235,.15);border-radius:3px;margin-top:12px;}
-.progress-bar-fill{height:5px;background:#2563EB;border-radius:3px;transition:width .4s ease;}
-
-.day-card{margin-bottom:10px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#fff;}
-.day-header{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;user-select:none;}
-.day-num{width:36px;height:36px;border-radius:10px;background:var(--paper-dim);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;color:var(--ink-mid);flex-shrink:0;}
-.day-header.today .day-num{background:var(--blue);color:#fff;}
-.day-info{flex:1;}
-.day-title{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:14.5px;margin:0 0 2px;}
-.day-sub{font-size:12px;color:var(--ink-light);}
-.day-check{font-size:12px;color:var(--ink-light);white-space:nowrap;}
-.day-chevron{font-size:12px;color:var(--ink-light);transition:transform .18s ease;}
-.day-card.expanded .day-chevron{transform:rotate(90deg);}
-.day-activities{display:none;border-top:1px solid var(--line);}
-.day-card.expanded .day-activities{display:block;}
-
-.activity-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer;}
-.activity-row:last-child{border-bottom:none;}
-.activity-row:active{background:var(--paper-dim);}
-.act-check{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s ease;}
-.activity-row.done .act-check{background:var(--ok);border-color:var(--ok);}
-.act-icon{font-size:16px;flex-shrink:0;}
-.act-info{flex:1;min-width:0;}
-.act-title{font-size:14px;font-weight:600;margin:0 0 2px;}
-.activity-row.done .act-title{text-decoration:line-through;color:var(--ink-light);}
-.act-time{font-size:12px;color:var(--ink-light);}
-.act-note-dot{width:6px;height:6px;background:var(--orange);border-radius:50%;flex-shrink:0;}
-
-.roteiro-empty{text-align:center;padding:48px 20px;}
-.roteiro-empty .icon{font-size:48px;margin-bottom:14px;}
-.import-btn{background:var(--blue);color:#fff;border:none;border-radius:14px;padding:16px 28px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;cursor:pointer;margin-top:16px;width:100%;}
-
-/* ── Activity detail sheet ── */
-.detail-header{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;}
-.detail-icon{font-size:28px;width:52px;height:52px;background:var(--blue-light);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.detail-title{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;margin:0 0 4px;}
-.detail-time{font-size:14px;color:var(--ink-mid);}
-.detail-addr{font-size:13.5px;color:var(--blue);margin-top:8px;display:flex;align-items:center;gap:6px;}
-.detail-addr a{color:var(--blue);}
-.check-toggle{display:flex;align-items:center;gap:12px;padding:14px;background:var(--paper-dim);border-radius:12px;cursor:pointer;margin:16px 0;}
-.check-toggle input[type=checkbox]{width:20px;height:20px;cursor:pointer;}
-.check-toggle span{font-size:14px;font-weight:600;}
-
-/* ── Conversor ── */
-.conversor-body{flex:1;padding:0 20px 40px;}
-.conv-input-wrap{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:20px;margin-bottom:20px;}
-.conv-label{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-light);margin-bottom:8px;}
-.conv-row{display:flex;gap:10px;align-items:center;}
-.conv-amount{font-family:'Space Grotesk',sans-serif;font-size:32px;font-weight:700;border:none;background:transparent;color:var(--ink);width:0;flex:1;padding:0;}
-.conv-amount:focus{outline:none;}
-.conv-currency-sel{border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;background:#fff;color:var(--ink);cursor:pointer;width:auto;}
-.conv-results{display:flex;flex-direction:column;gap:10px;}
-.conv-result-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;}
-.conv-result-flag{font-size:22px;margin-right:12px;}
-.conv-result-info{flex:1;}
-.conv-result-name{font-size:12px;color:var(--ink-light);font-weight:500;}
-.conv-result-code{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;}
-.conv-result-value{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;color:var(--ok);}
-.conv-updated{text-align:center;font-size:12px;color:var(--ink-light);margin-top:16px;}
-.conv-loading{text-align:center;padding:40px;color:var(--ink-light);}
-
-/* ── Toast ── */
-.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 20px;border-radius:12px;font-size:13.5px;font-weight:500;opacity:0;transition:opacity .2s ease;pointer-events:none;z-index:90;white-space:nowrap;}
-.toast.show{opacity:1;}
+</script>
+<style>
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ font-family:'Inter',sans-serif; background:#FBF9F6; }
+  /* screens */
+  .screen{ display:none; }
+  .screen:not(.hidden){ display:flex; flex-direction:column; min-height:100vh; max-width:520px; margin:0 auto; }
+  /* overlays */
+  .overlay{ position:fixed; inset:0; background:rgba(20,17,12,.55); display:flex; align-items:flex-end; z-index:70; opacity:0; pointer-events:none; transition:opacity .18s ease; }
+  .overlay.show{ opacity:1; pointer-events:auto; }
+  .overlay.hi{ z-index:80; }
+  .sheet-inner{ transform:translateY(24px); transition:transform .2s ease; max-height:92vh; overflow-y:auto; }
+  .overlay.show .sheet-inner{ transform:translateY(0); }
+  /* use screen */
+  .use-screen{ display:none; position:fixed; inset:0; background:#fff; z-index:60; flex-direction:column; }
+  .use-screen.show{ display:flex; }
+  /* gift card perforation */
+  .perf{ position:relative; height:0; border-top:2px dashed #E2DDD3; margin:0 18px; }
+  .perf::before,.perf::after{ content:""; position:absolute; top:-9px; width:18px; height:18px; background:#FBF9F6; border-radius:50%; }
+  .perf::before{ left:-27px; } .perf::after{ right:-27px; }
+  /* toast */
+  .toast{ position:fixed; bottom:88px; left:50%; transform:translateX(-50%); z-index:90; opacity:0; transition:opacity .2s ease; pointer-events:none; white-space:nowrap; }
+  .toast.show{ opacity:1; }
+  /* day expand */
+  .day-acts{ display:none; }
+  .day-open .day-acts{ display:block; }
+  .day-chevron{ transition:transform .18s ease; }
+  .day-open .day-chevron{ transform:rotate(90deg); }
+  /* focus ring */
+  input:focus,select:focus,textarea:focus{ outline:none; border-color:#FF7A00; }
 </style>
 </head>
-<body>
+<body class="bg-paper">
 
-<!-- ═══ SCREEN: AUTH ═══ -->
+<!-- ══════════════════════════════════
+     AUTH
+══════════════════════════════════ -->
 <div id="authScreen" class="screen">
-  <div class="auth-wrap">
-    <div class="auth-box">
-      <p class="auth-logo">✈️ Viagem Orlando</p>
-      <h1 id="authTitle">Entrar</h1>
-      <p class="sub" id="authSub">Acesse seus gift cards e roteiro.</p>
-      <label>E-mail</label>
-      <input type="email" id="authEmail" placeholder="voce@email.com">
-      <label>Senha</label>
-      <input type="password" id="authPassword" placeholder="Mínimo 6 caracteres">
-      <button class="btn btn-primary btn-block" style="margin-top:18px;" onclick="submitAuth()">Entrar</button>
-      <p class="auth-error" id="authError"></p>
-      <p class="auth-toggle" id="authToggle">Não tem conta? <a onclick="toggleAuthMode()">Cadastre-se</a></p>
+  <div class="flex-1 flex items-center justify-center px-6 py-10">
+    <div class="w-full max-w-sm">
+      <p class="text-xs font-bold tracking-widest uppercase text-brand-deep mb-8">✈️ Viagem Orlando</p>
+      <h1 id="authTitle" class="font-grotesk text-3xl font-bold text-ink mb-1">Entrar</h1>
+      <p id="authSub" class="text-sm text-ink-light mb-8">Acesse seus gift cards e roteiro.</p>
+      <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">E-mail</label>
+      <input type="email" id="authEmail" placeholder="voce@email.com"
+             class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base mb-1">
+      <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">Senha</label>
+      <input type="password" id="authPassword" placeholder="Mínimo 6 caracteres"
+             class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+      <button onclick="submitAuth()"
+              class="mt-5 w-full py-4 rounded-xl bg-brand text-white font-grotesk font-bold text-base active:scale-98 transition-transform">
+        Entrar
+      </button>
+      <p class="text-red-600 text-sm mt-3 min-h-[16px]" id="authError"></p>
+      <p class="text-center mt-5 text-sm text-ink-light" id="authToggle">
+        Não tem conta? <a onclick="toggleAuthMode()" class="text-brand-deep font-semibold cursor-pointer">Cadastre-se</a>
+      </p>
     </div>
   </div>
 </div>
 
-<!-- ═══ SCREEN: HOME ═══ -->
+<!-- ══════════════════════════════════
+     HOME
+══════════════════════════════════ -->
 <div id="homeScreen" class="screen hidden">
-  <div class="home-wrap">
-    <header class="home-header">
+  <div class="flex-1 flex flex-col pb-10">
+    <header class="flex items-start justify-between px-5 pt-8 pb-0">
       <div>
-        <p class="home-eyebrow">Viagem</p>
-        <h1 class="home-title">Orlando 2026</h1>
-        <p class="home-meta">20 Jul – 7 Ago · 3 adultos</p>
+        <p class="text-xs font-bold tracking-widest uppercase text-brand-deep mb-1">Viagem</p>
+        <h1 class="font-grotesk text-3xl font-bold text-ink mb-0.5">Orlando 2026</h1>
+        <p class="text-sm text-ink-light">20 Jul – 7 Ago · 3 adultos</p>
       </div>
-      <button class="logout-btn" onclick="logout()">Sair</button>
+      <button onclick="logout()"
+              class="mt-1 bg-paper-dim border-0 rounded-xl px-3.5 py-2 text-xs font-semibold text-ink-mid cursor-pointer">
+        Sair
+      </button>
     </header>
-    <div id="homeCountdown" class="countdown"></div>
-    <div class="module-grid">
-      <button class="module-card mod-gc" onclick="goToGiftCards()">
-        <div class="mod-icon">🎫</div>
-        <div class="mod-info">
-          <p class="mod-title">Gift Cards</p>
-          <p class="mod-sub" id="gcHomeSub">Carregando...</p>
+
+    <div id="homeCountdown"
+         class="hidden mx-5 mt-4 px-4 py-3 bg-brand-light rounded-2xl text-sm font-semibold text-brand-deep"></div>
+
+    <div class="flex flex-col gap-3 px-5 mt-6">
+      <!-- Gift Cards -->
+      <button onclick="goToGiftCards()"
+              class="flex items-center gap-4 p-5 rounded-2xl bg-white border border-line shadow-sm w-full text-left active:scale-98 transition-transform cursor-pointer">
+        <div class="w-14 h-14 rounded-2xl bg-brand-light flex items-center justify-center text-3xl flex-shrink-0">🎫</div>
+        <div class="flex-1 min-w-0">
+          <p class="font-grotesk font-bold text-base text-ink m-0 mb-0.5">Gift Cards</p>
+          <p class="text-sm text-ink-light m-0 truncate" id="gcHomeSub">Carregando...</p>
         </div>
-        <span class="mod-arrow">›</span>
+        <span class="text-2xl text-line font-light">›</span>
       </button>
-      <button class="module-card mod-roteiro" onclick="goToRoteiro()">
-        <div class="mod-icon">🗓️</div>
-        <div class="mod-info">
-          <p class="mod-title">Roteiro</p>
-          <p class="mod-sub" id="roteiroHomeSub">19 dias · Orlando</p>
+      <!-- Roteiro -->
+      <button onclick="goToRoteiro()"
+              class="flex items-center gap-4 p-5 rounded-2xl bg-blue-50 w-full text-left active:scale-98 transition-transform cursor-pointer">
+        <div class="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center text-3xl flex-shrink-0">🗓️</div>
+        <div class="flex-1 min-w-0">
+          <p class="font-grotesk font-bold text-base text-blue-700 m-0 mb-0.5">Roteiro</p>
+          <p class="text-sm text-blue-500 m-0 truncate" id="roteiroHomeSub">19 dias · Orlando</p>
         </div>
-        <span class="mod-arrow">›</span>
+        <span class="text-2xl text-blue-200 font-light">›</span>
       </button>
-      <button class="module-card mod-conversor" onclick="goToConversor()">
-        <div class="mod-icon">💱</div>
-        <div class="mod-info">
-          <p class="mod-title">Conversor</p>
-          <p class="mod-sub" id="conversorHomeSub">Carregando taxa...</p>
+      <!-- Conversor -->
+      <button onclick="goToConversor()"
+              class="flex items-center gap-4 p-5 rounded-2xl bg-ok-light w-full text-left active:scale-98 transition-transform cursor-pointer">
+        <div class="w-14 h-14 rounded-2xl bg-green-100 flex items-center justify-center text-3xl flex-shrink-0">💱</div>
+        <div class="flex-1 min-w-0">
+          <p class="font-grotesk font-bold text-base text-ok m-0 mb-0.5">Conversor</p>
+          <p class="text-sm text-green-600 m-0 truncate" id="conversorHomeSub">Carregando taxa...</p>
         </div>
-        <span class="mod-arrow">›</span>
+        <span class="text-2xl text-green-200 font-light">›</span>
       </button>
     </div>
   </div>
 </div>
 
-<!-- ═══ SCREEN: GIFT CARDS ═══ -->
+<!-- ══════════════════════════════════
+     GIFT CARDS
+══════════════════════════════════ -->
 <div id="gcScreen" class="screen hidden">
-  <div class="offline-bar" id="gcOfflineBar">
+  <div id="gcOfflineBar"
+       class="hidden bg-red-800 text-white text-center text-sm font-semibold px-4 py-2.5 flex items-center justify-center gap-3">
     <span>Você está offline — modo leitura</span>
-    <button class="clear-cache-btn" onclick="clearCache()">Limpar cache</button>
+    <button onclick="clearCache()"
+            class="bg-white/20 border border-white/30 rounded-lg text-white text-xs font-semibold px-3 py-1 cursor-pointer">
+      Limpar cache
+    </button>
   </div>
-  <header class="screen-header">
-    <button class="back-btn" onclick="navigate('homeScreen')">‹</button>
-    <h2 class="screen-title">Gift Cards</h2>
-    <button class="header-action" onclick="openForm()">+ Adicionar</button>
+  <header class="flex items-center gap-3 px-5 pt-5 pb-3">
+    <button onclick="navigate('homeScreen')"
+            class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-xl text-ink cursor-pointer flex-shrink-0">‹</button>
+    <h2 class="font-grotesk font-bold text-xl text-ink flex-1 m-0">Gift Cards</h2>
+    <button onclick="openForm()"
+            class="bg-brand text-white border-0 rounded-xl px-4 py-2 font-bold text-sm cursor-pointer">+ Adicionar</button>
   </header>
-  <div class="search-wrap">
-    <input type="search" class="search-input" id="gcSearch" placeholder="Buscar por nome ou empresa..." oninput="gcSearchStr=this.value.toLowerCase().trim();renderCards();">
+  <div class="px-5 pb-3">
+    <input type="search" id="gcSearch" placeholder="Buscar por nome ou empresa..."
+           oninput="gcSearchStr=this.value.toLowerCase().trim();renderCards();"
+           class="w-full px-4 py-3 rounded-xl border border-line bg-white text-ink text-sm">
   </div>
-  <div class="total-strip">
-    <div><div class="label">Saldo total</div></div>
-    <div class="value" id="gcTotal">US$ 0,00</div>
+  <div class="mx-5 mb-3 bg-ink rounded-2xl px-5 py-4 flex items-baseline justify-between">
+    <span class="text-xs uppercase tracking-widest text-ink-light/70 font-semibold">Saldo total</span>
+    <span class="font-grotesk font-bold text-xl text-brand" id="gcTotal">US$ 0,00</span>
   </div>
-  <div class="gc-list" id="gcList"></div>
+  <div class="flex-1 px-5 pb-24" id="gcList"></div>
 </div>
 
-<!-- ═══ SCREEN: ROTEIRO ═══ -->
+<!-- ══════════════════════════════════
+     ROTEIRO
+══════════════════════════════════ -->
 <div id="roteiroScreen" class="screen hidden">
-  <header class="screen-header">
-    <button class="back-btn" onclick="navigate('homeScreen')">‹</button>
-    <h2 class="screen-title">Roteiro</h2>
-    <span id="roteiroProgressBadge" style="font-size:13px;font-weight:600;color:var(--blue);"></span>
+  <header class="flex items-center gap-3 px-5 pt-5 pb-3">
+    <button onclick="navigate('homeScreen')"
+            class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-xl text-ink cursor-pointer flex-shrink-0">‹</button>
+    <h2 class="font-grotesk font-bold text-xl text-ink flex-1 m-0">Roteiro</h2>
+    <span id="roteiroProgressBadge" class="text-sm font-bold text-blue-600"></span>
   </header>
-  <div class="roteiro-body" id="roteiroBody">
-    <div class="conv-loading">Carregando...</div>
+  <div class="flex-1 px-5 pb-10 overflow-y-auto" id="roteiroBody">
+    <p class="text-center text-ink-light py-10">Carregando...</p>
   </div>
 </div>
 
-<!-- ═══ SCREEN: CONVERSOR ═══ -->
+<!-- ══════════════════════════════════
+     CONVERSOR
+══════════════════════════════════ -->
 <div id="conversorScreen" class="screen hidden">
-  <header class="screen-header">
-    <button class="back-btn" onclick="navigate('homeScreen')">‹</button>
-    <h2 class="screen-title">Conversor</h2>
+  <header class="flex items-center gap-3 px-5 pt-5 pb-3">
+    <button onclick="navigate('homeScreen')"
+            class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-xl text-ink cursor-pointer flex-shrink-0">‹</button>
+    <h2 class="font-grotesk font-bold text-xl text-ink flex-1 m-0">Conversor</h2>
   </header>
-  <div class="conversor-body">
-    <div class="conv-input-wrap">
-      <div class="conv-label">Converter</div>
-      <div class="conv-row">
-        <input type="number" class="conv-amount" id="convAmount" value="1" inputmode="decimal" oninput="renderConversor()">
-        <select class="conv-currency-sel" id="convBase" onchange="onConvBaseChange()">
+  <div class="flex-1 px-5 pb-10">
+    <div class="bg-white border border-line rounded-2xl p-5 mb-5">
+      <p class="text-xs font-semibold uppercase tracking-wide text-ink-light mb-3">Converter</p>
+      <div class="flex items-center gap-3">
+        <input type="number" id="convAmount" value="1" inputmode="decimal"
+               oninput="renderConversor()"
+               class="flex-1 w-0 font-grotesk font-bold text-4xl text-ink border-0 bg-transparent p-0 focus:outline-none">
+        <select id="convBase" onchange="onConvBaseChange()"
+                class="border border-line rounded-xl px-3 py-2.5 font-grotesk font-bold text-sm text-ink bg-white cursor-pointer">
           <option value="USD">🇺🇸 USD</option>
           <option value="BRL">🇧🇷 BRL</option>
           <option value="EUR">🇪🇺 EUR</option>
@@ -352,173 +218,230 @@ textarea{resize:vertical;min-height:80px;}
         </select>
       </div>
     </div>
-    <div class="conv-results" id="convResults">
-      <div class="conv-loading">Buscando cotações...</div>
+    <div id="convResults" class="flex flex-col gap-3">
+      <p class="text-center text-ink-light py-8">Buscando cotações...</p>
     </div>
-    <div class="conv-updated" id="convUpdated"></div>
+    <p id="convUpdated" class="text-center text-xs text-ink-light mt-4"></p>
   </div>
 </div>
 
-<!-- ═══ OVERLAY: GC FORM ═══ -->
+<!-- ══════════════════════════════════
+     OVERLAY: GC FORM
+══════════════════════════════════ -->
 <div class="overlay" id="formOverlay">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <h2 id="formTitle">Novo gift card</h2>
-    <input type="file" id="scanInput" accept="image/*" style="display:none" onchange="handleScan(this)">
-    <button type="button" class="scan-btn" id="scanBtn" onclick="triggerScan()">📷 Escanear screenshot do gift card</button>
+  <div class="sheet-inner w-full max-w-[520px] mx-auto bg-paper rounded-t-3xl px-5 pt-3 pb-8">
+    <div class="w-9 h-1 bg-line rounded-full mx-auto mb-5"></div>
+    <h2 class="font-grotesk font-bold text-xl text-ink mb-5" id="formTitle">Novo gift card</h2>
+    <input type="file" id="scanInput" accept="image/*" class="hidden" onchange="handleScan(this)">
+    <button id="scanBtn" onclick="triggerScan()"
+            class="w-full py-3 rounded-xl border border-dashed border-line bg-transparent text-ink-mid font-semibold text-sm mb-4 cursor-pointer">
+      📷 Escanear screenshot do gift card
+    </button>
     <input type="hidden" id="editId">
-    <label>Empresa / loja</label>
-    <input type="text" id="fCompany" placeholder="Ex: Amazon, Walmart, SeaWorld...">
-    <label>Nome / apelido</label>
-    <input type="text" id="fName" placeholder="Ex: Gift Card Viagem 1">
-    <label>Saldo</label>
-    <div class="field-row">
-      <select class="currency-select" id="fCurrency">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-1 mb-1.5">Empresa / loja</label>
+    <input type="text" id="fCompany" placeholder="Ex: Amazon, Walmart, SeaWorld..."
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">Nome / apelido</label>
+    <input type="text" id="fName" placeholder="Ex: Gift Card Viagem 1"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">Saldo</label>
+    <div class="flex gap-2">
+      <select id="fCurrency" class="border border-line rounded-xl px-3 py-3.5 font-bold text-sm text-ink bg-white">
         <option value="US$">US$</option>
         <option value="R$">R$</option>
         <option value="€">€</option>
         <option value="£">£</option>
       </select>
-      <input type="number" id="fValue" placeholder="0,00" step="0.01" inputmode="decimal">
-      <button type="button" class="paste-btn" onclick="pasteInto('fValue')">📋</button>
+      <input type="number" id="fValue" placeholder="0,00" step="0.01" inputmode="decimal"
+             class="flex-1 px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+      <button onclick="pasteInto('fValue')"
+              class="w-12 border border-line rounded-xl bg-paper-dim text-lg cursor-pointer">📋</button>
     </div>
-    <label>Código de barras</label>
-    <div class="field-row">
-      <input type="text" id="fCode" placeholder="Número do cartão" inputmode="numeric">
-      <button type="button" class="paste-btn" onclick="pasteInto('fCode')">📋</button>
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">Código de barras</label>
+    <div class="flex gap-2">
+      <input type="text" id="fCode" placeholder="Número do cartão" inputmode="numeric"
+             class="flex-1 px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+      <button onclick="pasteInto('fCode')"
+              class="w-12 border border-line rounded-xl bg-paper-dim text-lg cursor-pointer">📋</button>
     </div>
-    <label>PIN / senha</label>
-    <div class="field-row">
-      <input type="text" id="fPin" placeholder="Se houver" inputmode="numeric">
-      <button type="button" class="paste-btn" onclick="pasteInto('fPin')">📋</button>
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">PIN / senha</label>
+    <div class="flex gap-2">
+      <input type="text" id="fPin" placeholder="Se houver" inputmode="numeric"
+             class="flex-1 px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+      <button onclick="pasteInto('fPin')"
+              class="w-12 border border-line rounded-xl bg-paper-dim text-lg cursor-pointer">📋</button>
     </div>
-    <div class="sheet-actions">
-      <button class="btn btn-ghost" onclick="closeForm()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveCard()">Salvar</button>
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeForm()" class="flex-1 py-3.5 rounded-xl bg-paper-dim text-ink font-semibold text-sm cursor-pointer">Cancelar</button>
+      <button onclick="saveCard()" class="flex-1 py-3.5 rounded-xl bg-brand text-white font-semibold text-sm cursor-pointer">Salvar</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ OVERLAY: GC DEBIT ═══ -->
+<!-- ══════════════════════════════════
+     OVERLAY: GC DEBIT
+══════════════════════════════════ -->
 <div class="overlay" id="debitOverlay">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <h2>Registrar compra</h2>
+  <div class="sheet-inner w-full max-w-[520px] mx-auto bg-paper rounded-t-3xl px-5 pt-3 pb-8">
+    <div class="w-9 h-1 bg-line rounded-full mx-auto mb-5"></div>
+    <h2 class="font-grotesk font-bold text-xl text-ink mb-2">Registrar compra</h2>
     <input type="hidden" id="debitCardId">
-    <p id="debitCardInfo" style="margin-bottom:6px;color:var(--ink-mid);font-size:14px;"></p>
-    <label>Valor da compra</label>
-    <input type="number" id="debitAmount" placeholder="0,00" step="0.01" inputmode="decimal" oninput="updateDebitPreview()">
-    <div id="debitPreview" style="margin-top:12px;padding:12px 14px;border-radius:10px;background:var(--paper-dim);font-size:13.5px;color:var(--ink-mid);display:none;">
-      Novo saldo: <strong id="debitPreviewValue" style="color:var(--ink);"></strong>
+    <p id="debitCardInfo" class="text-sm text-ink-mid mb-4"></p>
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Valor da compra</label>
+    <input type="number" id="debitAmount" placeholder="0,00" step="0.01" inputmode="decimal"
+           oninput="updateDebitPreview()"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <div id="debitPreview" class="hidden mt-3 px-4 py-3 rounded-xl bg-paper-dim text-sm text-ink-mid">
+      Novo saldo: <strong id="debitPreviewValue" class="text-ink"></strong>
     </div>
-    <div class="sheet-actions">
-      <button class="btn btn-ghost" onclick="closeDebit()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmDebit()">Debitar</button>
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeDebit()" class="flex-1 py-3.5 rounded-xl bg-paper-dim text-ink font-semibold text-sm cursor-pointer">Cancelar</button>
+      <button onclick="confirmDebit()" class="flex-1 py-3.5 rounded-xl bg-brand text-white font-semibold text-sm cursor-pointer">Debitar</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ FULLSCREEN: GC USE ═══ -->
+<!-- ══════════════════════════════════
+     FULLSCREEN: GC USE
+══════════════════════════════════ -->
 <div class="use-screen" id="useScreen">
-  <div class="use-top">
+  <div class="flex items-center justify-between px-5 pt-5 pb-2">
     <div></div>
-    <button class="close-btn" onclick="closeUse()">✕</button>
+    <button onclick="closeUse()"
+            class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-lg cursor-pointer">✕</button>
   </div>
-  <div class="use-body" id="useBody"></div>
+  <div class="flex-1 flex flex-col items-center justify-center px-6 text-center pb-6" id="useBody"></div>
 </div>
 
-<!-- ═══ OVERLAY: ACTIVITY DETAIL ═══ -->
+<!-- ══════════════════════════════════
+     OVERLAY: ACTIVITY DETAIL
+══════════════════════════════════ -->
 <div class="overlay" id="atividadeOverlay">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
+  <div class="sheet-inner w-full max-w-[520px] mx-auto bg-paper rounded-t-3xl px-5 pt-3 pb-8">
+    <div class="w-9 h-1 bg-line rounded-full mx-auto mb-5"></div>
     <input type="hidden" id="detailId">
-    <div class="detail-header">
-      <div class="detail-icon" id="detailIcon">📍</div>
-      <div>
-        <p class="detail-title" id="detailTitle"></p>
-        <p class="detail-time" id="detailTime"></p>
+    <div class="flex items-start gap-3 mb-4">
+      <div id="detailIcon"
+           class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">📍</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-grotesk font-bold text-lg text-ink m-0 mb-1" id="detailTitle"></p>
+        <p class="text-sm text-ink-mid m-0" id="detailTime"></p>
       </div>
+      <button onclick="openEditAct(document.getElementById('detailId').value)"
+              class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-base cursor-pointer flex-shrink-0"
+              title="Editar atividade">✏️</button>
     </div>
-    <div id="detailAddr"></div>
-    <label style="cursor:pointer;">
-      <div class="check-toggle" onclick="document.getElementById('detailConcluida').click()">
-        <input type="checkbox" id="detailConcluida" onclick="event.stopPropagation()">
-        <span>Marcar como concluída</span>
-      </div>
+    <div id="detailAddr" class="mb-3"></div>
+    <label class="flex items-center gap-3 p-3.5 bg-paper-dim rounded-xl cursor-pointer mb-1">
+      <input type="checkbox" id="detailConcluida" class="w-5 h-5 accent-ok">
+      <span class="text-sm font-semibold text-ink">Marcar como concluída</span>
     </label>
-    <label>Notas</label>
-    <textarea id="detailNotas" placeholder="Adicione observações, dicas, lembretes..."></textarea>
-    <div class="sheet-actions">
-      <button class="btn btn-ghost" onclick="closeAtividadeDetail()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveAtividadeDetail()">Salvar</button>
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">Notas</label>
+    <textarea id="detailNotas" placeholder="Observações, dicas, lembretes..."
+              class="w-full px-4 py-3 rounded-xl border border-line bg-white text-ink text-base resize-y min-h-[72px]"></textarea>
+    <div class="flex gap-3 mt-5">
+      <button onclick="closeAtividadeDetail()" class="flex-1 py-3.5 rounded-xl bg-paper-dim text-ink font-semibold text-sm cursor-pointer">Cancelar</button>
+      <button onclick="saveAtividadeDetail()" class="flex-1 py-3.5 rounded-xl bg-brand text-white font-semibold text-sm cursor-pointer">Salvar</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ OVERLAY: ADD ACTIVITY ═══ -->
+<!-- ══════════════════════════════════
+     OVERLAY: EDIT ACTIVITY (hi z-index)
+══════════════════════════════════ -->
+<div class="overlay hi" id="editActOverlay">
+  <div class="sheet-inner w-full max-w-[520px] mx-auto bg-paper rounded-t-3xl px-5 pt-3 pb-8">
+    <div class="w-9 h-1 bg-line rounded-full mx-auto mb-5"></div>
+    <h2 class="font-grotesk font-bold text-xl text-ink mb-5">Editar atividade</h2>
+    <input type="hidden" id="editActId">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Título *</label>
+    <input type="text" id="editActTitulo" placeholder="Ex: Magic Kingdom"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">Horário início</label>
+    <input type="time" id="editActInicio"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">Horário fim</label>
+    <input type="time" id="editActFim"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">Endereço</label>
+    <input type="text" id="editActEndereco" placeholder="Ex: 1180 Seven Seas Dr, Orlando"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeEditAct()" class="flex-1 py-3.5 rounded-xl bg-paper-dim text-ink font-semibold text-sm cursor-pointer">Cancelar</button>
+      <button onclick="saveEditAct()" class="flex-1 py-3.5 rounded-xl bg-brand text-white font-semibold text-sm cursor-pointer">Salvar</button>
+    </div>
+    <button onclick="deleteAtividade(document.getElementById('editActId').value)"
+            class="w-full mt-3 py-3 rounded-xl bg-transparent border-0 text-red-500 font-semibold text-sm cursor-pointer">
+      Excluir atividade
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     OVERLAY: ADD ACTIVITY
+══════════════════════════════════ -->
 <div class="overlay" id="addActOverlay">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <h2>Nova atividade</h2>
+  <div class="sheet-inner w-full max-w-[520px] mx-auto bg-paper rounded-t-3xl px-5 pt-3 pb-8">
+    <div class="w-9 h-1 bg-line rounded-full mx-auto mb-5"></div>
+    <h2 class="font-grotesk font-bold text-xl text-ink mb-1">Nova atividade</h2>
     <input type="hidden" id="addActRoteiroId">
     <input type="hidden" id="addActDiaNum">
     <input type="hidden" id="addActDataDia">
     <input type="hidden" id="addActDiaSemana">
-    <p id="addActDayInfo" style="color:var(--ink-mid);font-size:13.5px;margin:-8px 0 14px;font-weight:600;"></p>
-    <label>Título *</label>
-    <input type="text" id="addActTitulo" placeholder="Ex: Jantar no CityWalk">
-    <label>Horário início</label>
-    <input type="time" id="addActInicio">
-    <label>Horário fim</label>
-    <input type="time" id="addActFim">
-    <label>Endereço (opcional)</label>
-    <input type="text" id="addActEndereco" placeholder="Ex: 6000 Universal Blvd, Orlando">
-    <div class="sheet-actions">
-      <button class="btn btn-ghost" onclick="closeAddAct()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveAddAct()">Adicionar</button>
+    <p id="addActDayInfo" class="text-sm font-semibold text-ink-mid mb-4"></p>
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Título *</label>
+    <input type="text" id="addActTitulo" placeholder="Ex: Jantar no CityWalk"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">Horário início</label>
+    <input type="time" id="addActInicio"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">Horário fim</label>
+    <input type="time" id="addActFim"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">Endereço</label>
+    <input type="text" id="addActEndereco" placeholder="Ex: 6000 Universal Blvd, Orlando"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeAddAct()" class="flex-1 py-3.5 rounded-xl bg-paper-dim text-ink font-semibold text-sm cursor-pointer">Cancelar</button>
+      <button onclick="saveAddAct()" class="flex-1 py-3.5 rounded-xl bg-brand text-white font-semibold text-sm cursor-pointer">Adicionar</button>
     </div>
   </div>
 </div>
 
-<!-- ═══ OVERLAY: ADD DAY ═══ -->
+<!-- ══════════════════════════════════
+     OVERLAY: ADD DAY
+══════════════════════════════════ -->
 <div class="overlay" id="addDayOverlay">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <h2>Novo dia</h2>
-    <label>Data *</label>
-    <input type="date" id="addDayDate">
-    <label>Primeira atividade *</label>
-    <input type="text" id="addDayTitulo" placeholder="Ex: Visitar ICON Park">
-    <label>Horário início</label>
-    <input type="time" id="addDayInicio">
-    <div class="sheet-actions">
-      <button class="btn btn-ghost" onclick="closeAddDay()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveAddDay()">Adicionar</button>
+  <div class="sheet-inner w-full max-w-[520px] mx-auto bg-paper rounded-t-3xl px-5 pt-3 pb-8">
+    <div class="w-9 h-1 bg-line rounded-full mx-auto mb-5"></div>
+    <h2 class="font-grotesk font-bold text-xl text-ink mb-5">Novo dia</h2>
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Data *</label>
+    <input type="date" id="addDayDate"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">Primeira atividade *</label>
+    <input type="text" id="addDayTitulo" placeholder="Ex: Visitar ICON Park"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mt-4 mb-1.5">Horário início</label>
+    <input type="time" id="addDayInicio"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeAddDay()" class="flex-1 py-3.5 rounded-xl bg-paper-dim text-ink font-semibold text-sm cursor-pointer">Cancelar</button>
+      <button onclick="saveAddDay()" class="flex-1 py-3.5 rounded-xl bg-brand text-white font-semibold text-sm cursor-pointer">Adicionar</button>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast bg-ink text-white px-5 py-3 rounded-xl text-sm font-medium" id="toast"></div>
 
 <script>
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-let cards = [];
-let expandedCompanies = new Set();
-let gcSearchStr = '';
-let authMode = 'login';
-let isOffline = !navigator.onLine;
-
-let roteiros = [];
-let currentRoteiroId = null;
-let currentRoteiro = null;
-let currentAtividades = [];
-let expandedDays = new Set();
-
-let convRates = {};
-let convBase = 'USD';
-let convUpdatedAt = null;
+let cards = [], expandedCompanies = new Set(), gcSearchStr = '';
+let authMode = 'login', isOffline = !navigator.onLine;
+let roteiros = [], currentRoteiroId = null, currentRoteiro = null;
+let currentAtividades = [], expandedDays = new Set();
+let convRates = {}, convBase = 'USD', convUpdatedAt = null;
 
 // ════════════════════════════════
 //  CONSTANTS
@@ -573,231 +496,197 @@ const ORLANDO_TRIP = {
 // ════════════════════════════════
 //  UTILITY
 // ════════════════════════════════
-function fmtMoney(v, currency) {
-  const sym = currency || 'US$';
-  return sym + ' ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+function fmtMoney(v, cur) {
+  return (cur||'US$')+' '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
-function escapeHtml(s) {
-  return (s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function esc(s){ return (s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function showToast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
 }
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2000);
-}
-function getActivityIcon(titulo) {
-  const t = (titulo||'').toLowerCase();
+function getActivityIcon(t){
+  t=(t||'').toLowerCase();
   if(t.includes('voo')||t.includes('aeroporto')) return '✈️';
   if(t.includes('check-in')||t.includes('checkin')) return '🏨';
   if(t.includes('checkout')||t.includes('check-out')) return '🏨';
   if(t.includes('walmart')||t.includes('ross')) return '🛒';
   if(t.includes('compras')||t.includes('shopping')||t.includes('springs')) return '🛍️';
   if(t.includes('magic kingdom')||t.includes('epcot')||t.includes('hollywood studios')||t.includes('animal kingdom')) return '🏰';
-  if(t.includes('universal')||t.includes('seaworld')||t.includes('typhoon')||t.includes('volcano')||t.includes('epic universe')) return '🎡';
+  if(t.includes('universal')||t.includes('seaworld')||t.includes('typhoon')||t.includes('volcano')||t.includes('epic')) return '🎡';
   if(t.includes('tempo livre')) return '⛱️';
   if(t.includes('igreja')) return '⛪';
   if(t.includes('mala')) return '🧳';
   if(t.includes('passeio')||t.includes('cidade')) return '🚶';
   return '📍';
 }
+function fmtDate(d){
+  if(!d) return '';
+  const [,m,day]=d.split('-');
+  return parseInt(day)+'/'+m;
+}
+function fmtDateFull(d){
+  if(!d) return '';
+  const months=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const [,m,day]=d.split('-');
+  return parseInt(day)+' '+months[parseInt(m)-1];
+}
 
 // ════════════════════════════════
 //  NAVIGATION
 // ════════════════════════════════
-function navigate(screenId) {
+function navigate(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
-  document.getElementById(screenId).classList.remove('hidden');
+  document.getElementById(id).classList.remove('hidden');
 }
-function goToGiftCards() {
-  navigate('gcScreen');
-  renderCards();
-  updateOfflineBar();
-}
-function goToRoteiro() {
-  navigate('roteiroScreen');
-  loadRoteiro();
-}
-function goToConversor() {
-  navigate('conversorScreen');
-  initConversor();
-}
+function goToGiftCards(){ navigate('gcScreen'); renderCards(); updateOfflineBar(); }
+function goToRoteiro(){ navigate('roteiroScreen'); loadRoteiro(); }
+function goToConversor(){ navigate('conversorScreen'); initConversor(); }
 
 // ════════════════════════════════
 //  AUTH
 // ════════════════════════════════
-function toggleAuthMode() {
-  authMode = authMode==='login'?'signup':'login';
-  document.getElementById('authTitle').textContent = authMode==='login'?'Entrar':'Criar conta';
-  document.getElementById('authToggle').innerHTML = authMode==='login'
-    ? 'Não tem conta? <a onclick="toggleAuthMode()">Cadastre-se</a>'
-    : 'Já tem conta? <a onclick="toggleAuthMode()">Entrar</a>';
-  document.querySelector('#authScreen .btn-primary').textContent = authMode==='login'?'Entrar':'Criar conta';
-  document.getElementById('authError').textContent = '';
+function toggleAuthMode(){
+  authMode=authMode==='login'?'signup':'login';
+  document.getElementById('authTitle').textContent=authMode==='login'?'Entrar':'Criar conta';
+  document.getElementById('authToggle').innerHTML=authMode==='login'
+    ?'Não tem conta? <a onclick="toggleAuthMode()" class="text-brand-deep font-semibold cursor-pointer">Cadastre-se</a>'
+    :'Já tem conta? <a onclick="toggleAuthMode()" class="text-brand-deep font-semibold cursor-pointer">Entrar</a>';
+  document.querySelector('#authScreen button').textContent=authMode==='login'?'Entrar':'Criar conta';
+  document.getElementById('authError').textContent='';
 }
-async function submitAuth() {
-  const email = document.getElementById('authEmail').value.trim();
-  const password = document.getElementById('authPassword').value;
-  const errEl = document.getElementById('authError');
-  errEl.textContent = '';
-  try {
-    const resp = await fetch('/api/auth?action='+authMode, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({email,password})
-    });
-    const data = await resp.json();
-    if(!resp.ok){ errEl.textContent = data.error||(resp.status===429?'Muitas tentativas. Aguarde 15 minutos.':'Erro ao entrar.'); return; }
+async function submitAuth(){
+  const email=document.getElementById('authEmail').value.trim();
+  const password=document.getElementById('authPassword').value;
+  const errEl=document.getElementById('authError'); errEl.textContent='';
+  try{
+    const resp=await fetch('/api/auth?action='+authMode,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const data=await resp.json();
+    if(!resp.ok){errEl.textContent=data.error||(resp.status===429?'Muitas tentativas. Aguarde 15 minutos.':'Erro ao entrar.');return;}
     await showHome();
-  } catch(e) { errEl.textContent = 'Não consegui conectar. Tente de novo.'; }
+  }catch(e){errEl.textContent='Não consegui conectar. Tente de novo.';}
 }
-async function logout() {
+async function logout(){
   await fetch('/api/auth?action=logout',{method:'POST'});
   navigate('authScreen');
-  document.getElementById('authPassword').value = '';
-  cards = []; roteiros = []; currentRoteiro = null; currentAtividades = [];
+  document.getElementById('authPassword').value='';
+  cards=[]; roteiros=[]; currentRoteiro=null; currentAtividades=[];
 }
-async function checkSession() {
-  try {
-    const resp = await fetch('/api/auth?action=me');
-    if(resp.ok){ await showHome(); return; }
-  } catch(e){}
+async function checkSession(){
+  try{ const r=await fetch('/api/auth?action=me'); if(r.ok){await showHome();return;} }catch(e){}
   navigate('authScreen');
 }
 
 // ════════════════════════════════
 //  HOME
 // ════════════════════════════════
-async function showHome() {
-  navigate('homeScreen');
-  updateCountdown();
+async function showHome(){
+  navigate('homeScreen'); updateCountdown();
   loadCards().then(updateGcHomeSub);
   loadRoteiros().then(updateRoteiroHomeSub);
   fetchQuickRate();
 }
-
-function updateCountdown() {
-  const el = document.getElementById('homeCountdown');
-  const today = new Date(); today.setHours(0,0,0,0);
-  const start = new Date('2026-07-20T00:00:00');
-  const end   = new Date('2026-08-07T00:00:00');
-  let msg = '';
-  if(today < start) {
-    const days = Math.round((start-today)/(1000*60*60*24));
-    msg = `✈️ ${days} dia${days!==1?'s':''} para a viagem!`;
-  } else if(today <= end) {
-    const day = Math.round((today-start)/(1000*60*60*24))+1;
-    msg = `🌟 Hoje é o Dia ${day} em Orlando!`;
-  }
-  if(msg){ el.textContent=msg; el.classList.add('show'); }
-  else el.classList.remove('show');
+function updateCountdown(){
+  const el=document.getElementById('homeCountdown');
+  const today=new Date(); today.setHours(0,0,0,0);
+  const start=new Date('2026-07-20T00:00:00'), end=new Date('2026-08-07T00:00:00');
+  let msg='';
+  if(today<start){ const d=Math.round((start-today)/864e5); msg=`✈️ ${d} dia${d!==1?'s':''} para a viagem!`; }
+  else if(today<=end){ const d=Math.round((today-start)/864e5)+1; msg=`🌟 Hoje é o Dia ${d} em Orlando!`; }
+  if(msg){el.textContent=msg;el.classList.remove('hidden');}else el.classList.add('hidden');
 }
-
-function updateGcHomeSub() {
-  const el = document.getElementById('gcHomeSub');
-  if(!cards.length){ el.textContent='Nenhum gift card ainda'; return; }
-  const usd = cards.filter(c=>c.currency==='US$').reduce((s,c)=>s+Number(c.value),0);
-  el.textContent = `US$ ${usd.toLocaleString('pt-BR',{minimumFractionDigits:2})} em saldo`;
+function updateGcHomeSub(){
+  const el=document.getElementById('gcHomeSub');
+  if(!cards.length){el.textContent='Nenhum gift card ainda';return;}
+  const usd=cards.filter(c=>c.currency==='US$').reduce((s,c)=>s+Number(c.value),0);
+  el.textContent=`US$ ${usd.toLocaleString('pt-BR',{minimumFractionDigits:2})} em saldo`;
 }
-
-function updateRoteiroHomeSub() {
-  const el = document.getElementById('roteiroHomeSub');
-  if(!roteiros.length){ el.textContent='Toque para importar o roteiro'; return; }
-  const r = roteiros[0];
-  const done = r._done||0, total = r._total||37;
-  el.textContent = `${done}/${total} atividades concluídas`;
+function updateRoteiroHomeSub(){
+  const el=document.getElementById('roteiroHomeSub');
+  if(!roteiros.length){el.textContent='Toque para importar o roteiro';return;}
+  const r=roteiros[0]; const done=r._done||0,total=r._total||37;
+  el.textContent=`${done}/${total} atividades concluídas`;
 }
-
-async function fetchQuickRate() {
-  try {
-    const resp = await fetch('https://api.frankfurter.app/latest?from=USD&to=BRL');
-    const data = await resp.json();
-    const rate = data.rates.BRL;
-    document.getElementById('conversorHomeSub').textContent = `1 USD = R$ ${rate.toFixed(2)}`;
-  } catch(e) {
-    document.getElementById('conversorHomeSub').textContent = 'Toque para converter';
-  }
+async function fetchQuickRate(){
+  try{
+    const r=await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
+    const d=await r.json(); const rate=d.usd.brl;
+    document.getElementById('conversorHomeSub').textContent=`1 USD = R$ ${Number(rate).toFixed(2)}`;
+  }catch(e){document.getElementById('conversorHomeSub').textContent='Toque para converter';}
 }
 
 // ════════════════════════════════
 //  GIFT CARDS
 // ════════════════════════════════
-async function loadCards() {
-  try {
-    const resp = await fetch('/api/cards');
-    if(resp.status===401){ navigate('authScreen'); return; }
-    const data = await resp.json();
-    cards = data.cards||[];
-  } catch(e){ cards=[]; }
+async function loadCards(){
+  try{
+    const r=await fetch('/api/cards');
+    if(r.status===401){navigate('authScreen');return;}
+    cards=(await r.json()).cards||[];
+  }catch(e){cards=[];}
 }
-
-function totalsByCurrency(list) {
-  const totals = {};
-  list.forEach(c=>{ const cur=c.currency||'US$'; totals[cur]=(totals[cur]||0)+Number(c.value||0); });
-  return Object.entries(totals).map(([cur,v])=>fmtMoney(v,cur)).join(' + ')||'US$ 0,00';
+function totalsByCurrency(list){
+  const t={};
+  list.forEach(c=>{const k=c.currency||'US$';t[k]=(t[k]||0)+Number(c.value||0);});
+  return Object.entries(t).map(([k,v])=>fmtMoney(v,k)).join(' + ')||'US$ 0,00';
 }
-
-function renderCards() {
-  const list = gcSearchStr
-    ? cards.filter(c=>(c.name||'').toLowerCase().includes(gcSearchStr)||(c.company||'').toLowerCase().includes(gcSearchStr))
-    : cards;
-
-  document.getElementById('gcTotal').textContent = totalsByCurrency(cards);
-  const area = document.getElementById('gcList');
-
-  if(!list.length) {
-    area.innerHTML = `<div class="empty"><div class="icon">🎫</div>${gcSearchStr?'Nenhum resultado para "'+escapeHtml(gcSearchStr)+'"':'Nenhum gift card ainda.<br>Toque em "+ Adicionar" para começar.'}</div>`;
+function renderCards(){
+  const list=gcSearchStr?cards.filter(c=>(c.name||'').toLowerCase().includes(gcSearchStr)||(c.company||'').toLowerCase().includes(gcSearchStr)):cards;
+  document.getElementById('gcTotal').textContent=totalsByCurrency(cards);
+  const area=document.getElementById('gcList');
+  if(!list.length){
+    area.innerHTML=`<div class="text-center py-16 text-ink-light"><div class="text-5xl mb-3">🎫</div>${gcSearchStr?'Nenhum resultado para "'+esc(gcSearchStr)+'"':'Nenhum gift card ainda.<br>Toque em "+ Adicionar" para começar.'}</div>`;
     return;
   }
-  const groups = {};
-  list.forEach(c=>{ const k=(c.company||'').trim()||'Outros'; (groups[k]=groups[k]||[]).push(c); });
-  const names = Object.keys(groups).sort((a,b)=>a==='Outros'?1:b==='Outros'?-1:a.localeCompare(b,'pt-BR'));
-
-  area.innerHTML = names.map(company=>{
-    const gc = groups[company];
-    const open = expandedCompanies.has(company);
+  const groups={};
+  list.forEach(c=>{const k=(c.company||'').trim()||'Outros';(groups[k]=groups[k]||[]).push(c);});
+  const names=Object.keys(groups).sort((a,b)=>a==='Outros'?1:b==='Outros'?-1:a.localeCompare(b,'pt-BR'));
+  area.innerHTML=names.map(company=>{
+    const gc=groups[company], open=expandedCompanies.has(company);
     return `
-    <div class="company-group ${open?'expanded':''}" data-company="${escapeHtml(company)}">
-      <div class="company-header" onclick="toggleCompany('${escapeHtml(company)}')">
-        <div class="company-header-left">
-          <span class="chevron">▶</span>
-          <span class="company-name">${escapeHtml(company)}</span>
-          <span class="company-count">${gc.length} cartão${gc.length>1?'ões':''}</span>
+    <div class="${open?'company-open':''} mt-3" data-co="${esc(company)}">
+      <div onclick="toggleCompany('${esc(company)}')"
+           class="flex items-center justify-between px-4 py-3.5 rounded-2xl bg-white border border-line cursor-pointer select-none">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-ink-light transition-transform ${open?'rotate-90':''}" style="display:inline-block">▶</span>
+          <span class="font-grotesk font-bold text-sm uppercase tracking-wide text-brand-deep">${esc(company)}</span>
+          <span class="text-xs text-ink-light">${gc.length} cartão${gc.length>1?'ões':''}</span>
         </div>
-        <span class="company-subtotal">${totalsByCurrency(gc)}</span>
+        <span class="font-grotesk font-bold text-sm">${totalsByCurrency(gc)}</span>
       </div>
-      <div class="company-cards">
-        ${gc.map(c=>`
-          <div class="card">
-            <div class="card-main" onclick="openUse('${c.id}')">
-              <div>
-                <p class="card-name">${escapeHtml(c.name)}</p>
-                <p class="card-sub">Código ····${String(c.code).slice(-4)}${c.pin?' · PIN salvo':''}</p>
-              </div>
-              <div class="card-value">${fmtMoney(c.value,c.currency)}</div>
+      ${open?`<div class="pt-2">${gc.map(c=>`
+        <div class="bg-white rounded-2xl my-3 border border-line overflow-hidden">
+          <div onclick="openUse('${c.id}')" class="flex items-center justify-between px-5 py-4 cursor-pointer">
+            <div>
+              <p class="font-grotesk font-semibold text-lg text-ink m-0 mb-0.5">${esc(c.name)}</p>
+              <p class="text-xs text-ink-light m-0">Código ····${String(c.code).slice(-4)}${c.pin?' · PIN salvo':''}</p>
             </div>
-            <div class="perforation"></div>
-            <div class="card-actions">
-              <button class="btn btn-primary" onclick="openUse('${c.id}')">Usar</button>
-              ${!isOffline?`<button class="btn btn-ghost" onclick="openDebit('${c.id}')">Debitar</button><button class="btn btn-ghost" onclick="editCard('${c.id}')">Editar</button><button class="btn btn-danger" onclick="deleteCard('${c.id}')">Excluir</button>`:''}
-            </div>
-          </div>`).join('')}
-      </div>
+            <div class="font-grotesk font-bold text-lg text-brand-deep ml-3 whitespace-nowrap">${fmtMoney(c.value,c.currency)}</div>
+          </div>
+          <div class="perf"></div>
+          <div class="flex gap-1.5 px-5 py-3 flex-wrap">
+            <button onclick="openUse('${c.id}')" class="flex-1 py-2.5 rounded-xl bg-brand text-white font-semibold text-sm min-w-[70px] cursor-pointer border-0">Usar</button>
+            ${!isOffline?`
+            <button onclick="openDebit('${c.id}')" class="flex-1 py-2.5 rounded-xl bg-paper-dim text-ink font-semibold text-sm min-w-[70px] cursor-pointer border-0">Debitar</button>
+            <button onclick="editCard('${c.id}')" class="flex-1 py-2.5 rounded-xl bg-paper-dim text-ink font-semibold text-sm min-w-[70px] cursor-pointer border-0">Editar</button>
+            <button onclick="deleteCard('${c.id}')" class="py-2.5 px-3 rounded-xl bg-transparent text-red-500 font-semibold text-sm cursor-pointer border-0">✕</button>`:''}
+          </div>
+        </div>`).join('')}</div>`:''}
     </div>`;
   }).join('');
 }
-
-function toggleCompany(c) {
-  if(expandedCompanies.has(c)) expandedCompanies.delete(c); else expandedCompanies.add(c);
+function toggleCompany(c){
+  if(expandedCompanies.has(c))expandedCompanies.delete(c);else expandedCompanies.add(c);
   renderCards();
 }
-function openForm() {
+function openForm(){
   document.getElementById('formTitle').textContent='Novo gift card';
   ['editId','fCompany','fName','fValue','fCode','fPin'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('fCurrency').value='US$';
   document.getElementById('formOverlay').classList.add('show');
 }
 function closeForm(){ document.getElementById('formOverlay').classList.remove('show'); }
-function editCard(id) {
-  const c = cards.find(x=>x.id===id); if(!c) return;
+function editCard(id){
+  const c=cards.find(x=>x.id===id); if(!c) return;
   document.getElementById('formTitle').textContent='Editar gift card';
   document.getElementById('editId').value=c.id;
   document.getElementById('fCompany').value=c.company||'';
@@ -808,7 +697,7 @@ function editCard(id) {
   document.getElementById('fPin').value=c.pin||'';
   document.getElementById('formOverlay').classList.add('show');
 }
-async function saveCard() {
+async function saveCard(){
   const company=document.getElementById('fCompany').value.trim();
   const name=document.getElementById('fName').value.trim();
   const value=parseFloat(document.getElementById('fValue').value)||0;
@@ -819,468 +708,432 @@ async function saveCard() {
   if(!name){showToast('Dá um nome pro cartão.');return;}
   if(!code){showToast('Informe o número/código do cartão.');return;}
   const body={company,name,value,currency,code,pin};
-  try {
-    if(editId){
-      const resp=await fetch('/api/cards',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,id:editId})});
-      if(!resp.ok){showToast('Erro ao salvar.');return;}
-    } else {
-      const resp=await fetch('/api/cards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      if(!resp.ok){showToast('Erro ao salvar.');return;}
-    }
+  try{
+    const resp=await fetch('/api/cards',{method:editId?'PATCH':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(editId?{...body,id:editId}:body)});
+    if(!resp.ok){showToast('Erro ao salvar.');return;}
     expandedCompanies.add(company||'Outros');
-    await loadCards(); renderCards(); closeForm(); showToast('Salvo!');
-    updateGcHomeSub();
-  } catch(e){showToast('Não consegui salvar. Tente de novo.');}
+    await loadCards(); renderCards(); closeForm(); showToast('Salvo!'); updateGcHomeSub();
+  }catch(e){showToast('Não consegui salvar. Tente de novo.');}
 }
-async function deleteCard(id) {
+async function deleteCard(id){
   if(!confirm('Excluir este gift card?')) return;
   await fetch('/api/cards?id='+encodeURIComponent(id),{method:'DELETE'});
   await loadCards(); renderCards(); updateGcHomeSub();
 }
-function openDebit(id) {
+function openDebit(id){
   if(isOffline){showToast('Sem conexão — débito indisponível offline.');return;}
   const c=cards.find(x=>x.id===id); if(!c) return;
   document.getElementById('debitCardId').value=id;
   document.getElementById('debitCardInfo').textContent=`${c.name} · saldo atual ${fmtMoney(c.value,c.currency)}`;
   document.getElementById('debitAmount').value='';
-  document.getElementById('debitPreview').style.display='none';
+  document.getElementById('debitPreview').classList.add('hidden');
   document.getElementById('debitOverlay').classList.add('show');
 }
 function closeDebit(){ document.getElementById('debitOverlay').classList.remove('show'); }
-function updateDebitPreview() {
+function updateDebitPreview(){
   const id=document.getElementById('debitCardId').value;
   const c=cards.find(x=>x.id===id); if(!c) return;
   const amount=Number(document.getElementById('debitAmount').value);
-  const preview=document.getElementById('debitPreview');
-  const val=document.getElementById('debitPreviewValue');
-  if(!amount||amount<=0){preview.style.display='none';return;}
+  const preview=document.getElementById('debitPreview'),val=document.getElementById('debitPreviewValue');
+  if(!amount||amount<=0){preview.classList.add('hidden');return;}
   const novo=Math.max(0,Number(c.value)-amount);
-  preview.style.display='block';
+  preview.classList.remove('hidden');
   val.textContent=amount>Number(c.value)?fmtMoney(0,c.currency)+' (usado por inteiro)':fmtMoney(novo,c.currency);
 }
-async function confirmDebit() {
+async function confirmDebit(){
   const id=document.getElementById('debitCardId').value;
   const amount=Number(document.getElementById('debitAmount').value);
   if(!amount||amount<=0){showToast('Informe um valor válido.');return;}
-  try {
+  try{
     const resp=await fetch('/api/cards',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,debit:amount})});
-    if(!resp.ok){showToast('Erro ao debitar. Tente de novo.');return;}
+    if(!resp.ok){showToast('Erro ao debitar.');return;}
     const data=await resp.json();
     await loadCards(); renderCards(); closeDebit(); closeUse();
     const c=cards.find(x=>x.id===id);
     showToast(`Debitado! Novo saldo: ${fmtMoney(data.value,c?c.currency:'US$')}`);
     updateGcHomeSub();
-  } catch(e){showToast('Sem conexão — tente de novo.');}
+  }catch(e){showToast('Sem conexão — tente de novo.');}
 }
-function openUse(id) {
+function openUse(id){
   const c=cards.find(x=>x.id===id); if(!c) return;
   const body=document.getElementById('useBody');
-  let media=`<div class="barcode-wrap"><svg id="barcodeSvg"></svg></div><div class="use-code">${escapeHtml(c.code)}</div>`;
-  if(c.pin) media+=`<div class="pin-box"><span class="pin-label">PIN</span><span class="pin-value">${escapeHtml(c.pin)}</span></div>`;
+  let media=`<div class="w-full bg-white border border-line rounded-2xl p-5 mb-3"><svg id="barcodeSvg" class="w-full h-auto"></svg></div><p class="font-mono tracking-wider text-sm text-ink-light mb-3">${esc(c.code)}</p>`;
+  if(c.pin) media+=`<div class="bg-paper-dim rounded-xl px-4 py-2.5 flex items-center gap-3 mb-3"><span class="text-xs uppercase tracking-widest font-bold text-ink-light">PIN</span><span class="font-mono font-bold text-lg tracking-wide">${esc(c.pin)}</span></div>`;
   body.innerHTML=`
-    ${c.company?`<div class="logo-wrap" id="clogo"></div><p style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--orange-deep);font-weight:700;margin:0 0 4px;">${escapeHtml(c.company)}</p>`:''}
-    <p class="use-name">${escapeHtml(c.name)}</p>
-    <p class="use-value">${fmtMoney(c.value,c.currency)}</p>
+    ${c.company?`<div class="w-16 h-16 rounded-2xl overflow-hidden bg-paper-dim flex items-center justify-center mb-2" id="clogo"></div><p class="text-xs font-bold uppercase tracking-widest text-brand-deep mb-1">${esc(c.company)}</p>`:''}
+    <p class="font-grotesk font-bold text-2xl text-ink mb-0.5">${esc(c.name)}</p>
+    <p class="text-brand-deep font-bold font-grotesk text-base mb-5">${fmtMoney(c.value,c.currency)}</p>
     ${media}
-    ${!isOffline?`<button class="btn btn-primary" style="margin-top:18px;max-width:240px;" onclick="openDebit('${c.id}')">Registrar valor usado</button>`:''}
-    <p class="hint">Aumente o brilho da tela para o leitor reconhecer melhor.</p>`;
+    ${!isOffline?`<button onclick="openDebit('${c.id}')" class="mt-2 bg-brand text-white border-0 rounded-xl px-8 py-3 font-semibold cursor-pointer">Registrar valor usado</button>`:''}
+    <p class="text-xs text-ink-light mt-4">Aumente o brilho da tela para o leitor reconhecer melhor.</p>`;
   document.getElementById('useScreen').classList.add('show');
   const logoEl=document.getElementById('clogo');
   if(logoEl&&c.company){
-    const img=new Image(); img.className='company-logo';
+    const img=new Image(); img.className='w-16 h-16 object-contain';
     img.src='https://www.google.com/s2/favicons?domain='+c.company.toLowerCase().replace(/\s+/g,'')+'.com&sz=128';
     img.onerror=()=>{
       const colors=['#FF7A00','#1F8A57','#2563EB','#7C3AED','#DB2777','#0891B2'];
       let h=0; for(const ch of c.company) h=(h*31+ch.charCodeAt(0))&0xffffffff;
-      logoEl.innerHTML=`<div class="logo-initial" style="background:${colors[Math.abs(h)%colors.length]}">${c.company[0].toUpperCase()}</div>`;
+      logoEl.innerHTML=`<div class="w-16 h-16 flex items-center justify-center font-grotesk font-bold text-3xl text-white" style="background:${colors[Math.abs(h)%colors.length]}">${c.company[0].toUpperCase()}</div>`;
     };
     logoEl.appendChild(img);
   }
-  try {
-    JsBarcode('#barcodeSvg',c.code,{format:'CODE128',lineColor:'#1A1A1A',width:2.4,height:90,displayValue:false,margin:8});
-  } catch(e){ document.querySelector('.barcode-wrap').innerHTML='<p style="font-size:13px;color:var(--red);">Não consegui gerar o código de barras.</p>'; }
+  try{ JsBarcode('#barcodeSvg',c.code,{format:'CODE128',lineColor:'#1A1A1A',width:2.4,height:90,displayValue:false,margin:8}); }
+  catch(e){ document.querySelector('#useBody .rounded-2xl').innerHTML='<p class="text-red-500 text-sm">Não consegui gerar o código de barras.</p>'; }
 }
 function closeUse(){ document.getElementById('useScreen').classList.remove('show'); }
-async function pasteInto(fieldId) {
-  const f=document.getElementById(fieldId);
-  try { const t=await navigator.clipboard.readText(); if(t){f.value=t.trim();f.focus();showToast('Colado!');return;} } catch(e){}
+async function pasteInto(id){
+  const f=document.getElementById(id);
+  try{ const t=await navigator.clipboard.readText(); if(t){f.value=t.trim();f.focus();showToast('Colado!');return;} }catch(e){}
   f.focus(); showToast('Toque e segure o campo e escolha "Colar"');
 }
 function triggerScan(){ document.getElementById('scanInput').click(); }
-function parseGiftCard(text) {
+function parseGiftCard(text){
   const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
   const skip=/minhas compras|carteira|apple|adicionar|saldo|valor|enviar|marcar|utilizar|resumo|sobre|consulte/i;
-  let code='',codeIdx=-1;
-  for(let i=0;i<lines.length;i++){ const m=lines[i].match(/\d{15,}/); if(m){code=m[0];codeIdx=i;break;} }
+  let code='',ci=-1;
+  for(let i=0;i<lines.length;i++){const m=lines[i].match(/\d{15,}/);if(m){code=m[0];ci=i;break;}}
   const pinM=text.match(/PIN\s+(\d{4,8})/i); const pin=pinM?pinM[1]:'';
   let value='';
-  for(const m of text.matchAll(/US\$\s*([\d.,]+)/gi)){ const v=parseFloat(m[1].replace(',','.')); if(v>0){value=v;break;} }
+  for(const m of text.matchAll(/US\$\s*([\d.,]+)/gi)){const v=parseFloat(m[1].replace(',','.'));if(v>0){value=v;break;}}
   let company='';
-  if(codeIdx>0){ for(let i=codeIdx-1;i>=0;i--){ if(!skip.test(lines[i])&&lines[i].length>2){company=lines[i];break;} } }
-  if(!company){ for(const l of lines){ if(!skip.test(l)&&l.length>2&&l.length<60){company=l;break;} } }
+  if(ci>0){for(let i=ci-1;i>=0;i--){if(!skip.test(lines[i])&&lines[i].length>2){company=lines[i];break;}}}
+  if(!company){for(const l of lines){if(!skip.test(l)&&l.length>2&&l.length<60){company=l;break;}}}
   return{company,code,pin,value};
 }
-async function handleScan(input) {
-  const file=input.files[0]; if(!file) return;
-  input.value='';
+async function handleScan(input){
+  const file=input.files[0]; if(!file) return; input.value='';
   const btn=document.getElementById('scanBtn'); btn.textContent='⏳ Lendo imagem...'; btn.disabled=true;
-  try {
-    const {data:{text}}=await Tesseract.recognize(file,'eng+por');
-    const parsed=parseGiftCard(text);
-    if(!parsed.code){showToast('Não encontrei o código. Verifique a imagem.');return;}
-    document.getElementById('fCompany').value=parsed.company;
-    document.getElementById('fName').value=parsed.company;
-    if(parsed.value) document.getElementById('fValue').value=parsed.value;
-    document.getElementById('fCode').value=parsed.code;
-    document.getElementById('fPin').value=parsed.pin;
+  try{
+    const{data:{text}}=await Tesseract.recognize(file,'eng+por');
+    const p=parseGiftCard(text);
+    if(!p.code){showToast('Não encontrei o código. Verifique a imagem.');return;}
+    document.getElementById('fCompany').value=p.company;
+    document.getElementById('fName').value=p.company;
+    if(p.value) document.getElementById('fValue').value=p.value;
+    document.getElementById('fCode').value=p.code;
+    document.getElementById('fPin').value=p.pin;
     showToast('Confira os dados e salve!');
-  } catch(e){ showToast('Erro ao ler a imagem. Tente outra foto.'); }
-  finally { btn.textContent='📷 Escanear screenshot do gift card'; btn.disabled=false; }
+  }catch(e){showToast('Erro ao ler a imagem. Tente outra foto.');}
+  finally{btn.textContent='📷 Escanear screenshot do gift card';btn.disabled=false;}
 }
 
 // ════════════════════════════════
 //  ROTEIRO
 // ════════════════════════════════
-async function loadRoteiros() {
-  try {
-    const resp = await fetch('/api/roteiros');
-    if(!resp.ok) return;
-    const data = await resp.json();
-    roteiros = data.roteiros||[];
-  } catch(e){ roteiros=[]; }
+async function loadRoteiros(){
+  try{ const r=await fetch('/api/roteiros'); if(r.ok) roteiros=(await r.json()).roteiros||[]; }catch(e){roteiros=[];}
 }
-
-async function loadRoteiro() {
+async function loadRoteiro(){
   await loadRoteiros();
   if(!roteiros.length){ renderRoteiroEmpty(); return; }
-  const r = roteiros[0];
-  currentRoteiroId = r.id;
-  try {
-    const resp = await fetch('/api/roteiros?id='+r.id);
-    const data = await resp.json();
-    currentRoteiro = data.roteiro;
-    currentAtividades = data.atividades||[];
-    // auto-expand today
-    const todayNum = getTodayDayNumber();
-    if(todayNum) expandedDays.add(todayNum);
-    else if(!expandedDays.size) expandedDays.add(1);
+  currentRoteiroId=roteiros[0].id;
+  try{
+    const r=await fetch('/api/roteiros?id='+currentRoteiroId);
+    const d=await r.json();
+    currentRoteiro=d.roteiro; currentAtividades=d.atividades||[];
+    const todayNum=getTodayDayNumber();
+    if(todayNum) expandedDays.add(todayNum); else if(!expandedDays.size) expandedDays.add(1);
     renderRoteiroDetail();
-  } catch(e){ renderRoteiroEmpty(); }
+  }catch(e){renderRoteiroEmpty();}
 }
-
-function getTodayDayNumber() {
+function getTodayDayNumber(){
   if(!currentRoteiro) return null;
-  const today = new Date().toISOString().slice(0,10);
-  if(today < currentRoteiro.data_inicio || today > currentRoteiro.data_fim) return null;
-  const start = new Date(currentRoteiro.data_inicio+'T00:00:00');
-  const todayD = new Date(today+'T00:00:00');
-  return Math.round((todayD-start)/(1000*60*60*24))+1;
+  const today=new Date().toISOString().slice(0,10);
+  if(today<currentRoteiro.data_inicio||today>currentRoteiro.data_fim) return null;
+  const start=new Date(currentRoteiro.data_inicio+'T00:00:00');
+  return Math.round((new Date(today+'T00:00:00')-start)/864e5)+1;
 }
-
-function renderRoteiroEmpty() {
+function renderRoteiroEmpty(){
   document.getElementById('roteiroProgressBadge').textContent='';
   document.getElementById('roteiroBody').innerHTML=`
-    <div class="roteiro-empty">
-      <div class="icon">🗓️</div>
-      <p style="font-size:16px;font-weight:600;margin:0 0 8px;">Roteiro não importado</p>
-      <p style="font-size:14px;color:var(--ink-light);margin:0;">Importe o roteiro de Orlando para acompanhar dia a dia.</p>
-      <button class="import-btn" onclick="importarOrlando()">✈️ Importar Roteiro Orlando 2026</button>
+    <div class="text-center py-16 px-4">
+      <div class="text-5xl mb-4">🗓️</div>
+      <p class="font-grotesk font-bold text-lg text-ink mb-1">Roteiro não importado</p>
+      <p class="text-sm text-ink-light mb-6">Importe o roteiro de Orlando para acompanhar dia a dia.</p>
+      <button onclick="importarOrlando()"
+              class="w-full py-4 rounded-2xl bg-blue-600 text-white font-grotesk font-bold text-base border-0 cursor-pointer">
+        ✈️ Importar Roteiro Orlando 2026
+      </button>
     </div>`;
 }
-
-function renderRoteiroDetail() {
+function renderRoteiroDetail(){
   if(!currentRoteiro) return;
-  const total = currentAtividades.length;
-  const done  = currentAtividades.filter(a=>a.concluida).length;
+  const total=currentAtividades.length;
+  const done=currentAtividades.filter(a=>a.concluida).length;
+  const pct=total>0?Math.round(done/total*100):0;
+  document.getElementById('roteiroProgressBadge').textContent=`${done}/${total}`;
 
-  document.getElementById('roteiroProgressBadge').textContent = `${done}/${total}`;
+  const byDay={};
+  currentAtividades.forEach(a=>{(byDay[a.dia_numero]=byDay[a.dia_numero]||[]).push(a);});
+  const days=[...new Set(currentAtividades.map(a=>a.dia_numero))].sort((a,b)=>a-b);
+  const todayNum=getTodayDayNumber();
 
-  // Group by day
-  const byDay = {};
-  currentAtividades.forEach(a=>{ (byDay[a.dia_numero]=byDay[a.dia_numero]||[]).push(a); });
-  const days = [...new Set(currentAtividades.map(a=>a.dia_numero))].sort((a,b)=>a-b);
-
-  const todayNum = getTodayDayNumber();
-  const pct = total>0?Math.round(done/total*100):0;
-
-  const heroHtml = `
-    <div class="roteiro-hero">
-      <div class="roteiro-hero-info">
-        <div class="hero-dest">🌴 ${escapeHtml(currentRoteiro.destino||'Orlando')}</div>
-        <div class="hero-dates">${fmtDate(currentRoteiro.data_inicio)} – ${fmtDate(currentRoteiro.data_fim)} · ${currentRoteiro.adultos} adulto${currentRoteiro.adultos>1?'s':''}</div>
+  const hero=`
+    <div class="bg-blue-50 rounded-2xl p-4 mb-4 flex items-center justify-between">
+      <div>
+        <p class="font-grotesk font-bold text-lg text-blue-700 m-0">🌴 ${esc(currentRoteiro.destino||'Orlando')}</p>
+        <p class="text-sm text-blue-500 mt-0.5 m-0">${fmtDateFull(currentRoteiro.data_inicio)} – ${fmtDateFull(currentRoteiro.data_fim)} · ${currentRoteiro.adultos} adulto${currentRoteiro.adultos>1?'s':''}</p>
       </div>
-      <div class="roteiro-progress">
-        <div class="progress-num">${done}</div>
-        <div class="progress-label">de ${total} feitas</div>
+      <div class="text-right">
+        <p class="font-grotesk font-bold text-3xl text-blue-700 m-0 leading-none">${done}</p>
+        <p class="text-xs text-blue-500 m-0">de ${total}</p>
       </div>
     </div>
-    <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
-    <div style="margin-bottom:16px;"></div>`;
+    <div class="w-full h-2 bg-blue-100 rounded-full mb-5">
+      <div class="h-2 bg-blue-500 rounded-full transition-all duration-500" style="width:${pct}%"></div>
+    </div>`;
 
-  const daysHtml = days.map(dn=>{
-    const acts = byDay[dn]||[];
-    const info = acts[0];
-    const dayDone = acts.filter(a=>a.concluida).length;
-    const isToday = dn===todayNum;
-    const isOpen = expandedDays.has(dn);
-    const dateStr = info?.data_dia ? fmtDateShort(info.data_dia) : `Dia ${dn}`;
-    const semana  = info?.dia_semana||'';
+  const daysHtml=days.map(dn=>{
+    // sort activities by horario_inicio
+    const acts=(byDay[dn]||[]).slice().sort((a,b)=>{
+      const ta=a.horario_inicio||'99:99', tb=b.horario_inicio||'99:99';
+      return ta.localeCompare(tb);
+    });
+    const info=acts[0];
+    const dayDone=acts.filter(a=>a.concluida).length;
+    const isToday=dn===todayNum;
+    const isOpen=expandedDays.has(dn);
+    const dateStr=info?.data_dia?fmtDate(info.data_dia):`Dia ${dn}`;
+    const semana=info?.dia_semana||'';
     return `
-    <div class="day-card ${isOpen?'expanded':''}" id="day-${dn}">
-      <div class="day-header ${isToday?'today':''}" onclick="toggleDay(${dn})">
-        <div class="day-num">${dn}</div>
-        <div class="day-info">
-          <p class="day-title">${semana} · ${dateStr}</p>
-          <p class="day-sub">${acts.map(a=>getActivityIcon(a.titulo)).join(' ')} ${acts.map(a=>escapeHtml(a.titulo)).join(', ')}</p>
+    <div class="${isOpen?'day-open':''} mb-2.5 rounded-2xl overflow-hidden border ${isToday?'border-blue-300 shadow-md shadow-blue-100':'border-line'} bg-white">
+      <div onclick="toggleDay(${dn})"
+           class="flex items-center gap-3 p-4 cursor-pointer select-none ${isToday?'bg-blue-50':''}">
+        <div class="w-9 h-9 rounded-xl ${isToday?'bg-blue-600 text-white':'bg-paper-dim text-ink-mid'} flex items-center justify-center font-grotesk font-bold text-sm flex-shrink-0">
+          ${dn}
         </div>
-        <span class="day-check">${dayDone}/${acts.length}</span>
-        <span class="day-chevron">▶</span>
+        <div class="flex-1 min-w-0">
+          <p class="font-grotesk font-semibold text-sm ${isToday?'text-blue-700':'text-ink'} m-0 mb-0.5">${semana}${semana&&dateStr?' · ':''}${dateStr}</p>
+          <p class="text-xs text-ink-light m-0 truncate">${acts.map(a=>getActivityIcon(a.titulo)).join(' ')} ${acts.map(a=>esc(a.titulo)).join(', ')}</p>
+        </div>
+        <span class="text-xs text-ink-light whitespace-nowrap">${dayDone}/${acts.length}</span>
+        <span class="day-chevron text-xs text-ink-light">▶</span>
       </div>
-      <div class="day-activities">
+      <div class="day-acts border-t border-line">
         ${acts.map(a=>`
-          <div class="activity-row ${a.concluida?'done':''}" onclick="openAtividadeDetail('${a.id}')">
-            <div class="act-check">${a.concluida?'<svg width="12" height="12" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}</div>
-            <span class="act-icon">${getActivityIcon(a.titulo)}</span>
-            <div class="act-info">
-              <p class="act-title">${escapeHtml(a.titulo)}</p>
-              <p class="act-time">${a.horario_inicio}${a.horario_fim?' – '+a.horario_fim:''}</p>
+          <div onclick="openAtividadeDetail('${a.id}')"
+               class="flex items-center gap-3 px-4 py-3.5 border-b border-line last:border-0 cursor-pointer active:bg-paper-dim ${a.concluida?'opacity-60':''}">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${a.concluida?'bg-ok border-ok':'border-line'}">
+              ${a.concluida?'<svg width="10" height="10" viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>':''}
             </div>
-            ${a.notas?'<div class="act-note-dot"></div>':''}
+            <span class="text-base flex-shrink-0">${getActivityIcon(a.titulo)}</span>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold ${a.concluida?'line-through text-ink-light':'text-ink'} m-0 mb-0.5">${esc(a.titulo)}</p>
+              <p class="text-xs text-ink-light m-0">${a.horario_inicio}${a.horario_fim?' – '+a.horario_fim:''}</p>
+            </div>
+            ${a.notas?'<div class="w-2 h-2 rounded-full bg-brand flex-shrink-0"></div>':''}
           </div>`).join('')}
-      <button onclick="event.stopPropagation();openAddAct(${dn},'${acts[0]?.data_dia||''}','${acts[0]?.dia_semana||''}')" style="width:100%;padding:11px 16px;border:none;border-top:1px dashed var(--line);background:transparent;color:var(--orange-deep);font-size:13px;font-weight:600;cursor:pointer;text-align:left;">+ Adicionar atividade neste dia</button>
+        <button onclick="event.stopPropagation();openAddAct(${dn},'${acts[0]?.data_dia||''}','${acts[0]?.dia_semana||''}')"
+                class="w-full px-4 py-3 border-0 bg-transparent text-brand-deep font-semibold text-sm cursor-pointer text-left border-t border-dashed border-line">
+          + Adicionar atividade neste dia
+        </button>
       </div>
     </div>`;
-  }).join('') + `
-  <div style="padding:16px 0 0;">
-    <button onclick="openAddDay()" style="width:100%;padding:14px;border:1.5px dashed var(--line);border-radius:14px;background:transparent;color:var(--ink-mid);font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;cursor:pointer;">+ Novo dia</button>
-  </div>`;
+  }).join('');
 
-  document.getElementById('roteiroBody').innerHTML = heroHtml + daysHtml;
+  const novoDia=`
+    <div class="pt-2 pb-4">
+      <button onclick="openAddDay()"
+              class="w-full py-4 rounded-2xl border border-dashed border-line bg-transparent text-ink-mid font-grotesk font-bold text-sm cursor-pointer">
+        + Novo dia
+      </button>
+    </div>`;
 
-  // update home sub
-  if(roteiros[0]) {
-    roteiros[0]._done = done;
-    roteiros[0]._total = total;
-    updateRoteiroHomeSub();
-  }
+  document.getElementById('roteiroBody').innerHTML=hero+daysHtml+novoDia;
+  if(roteiros[0]){roteiros[0]._done=done;roteiros[0]._total=total;updateRoteiroHomeSub();}
 }
-
-function toggleDay(dn) {
-  if(expandedDays.has(dn)) expandedDays.delete(dn); else expandedDays.add(dn);
+function toggleDay(dn){
+  if(expandedDays.has(dn))expandedDays.delete(dn);else expandedDays.add(dn);
   renderRoteiroDetail();
 }
-
-function openAtividadeDetail(id) {
-  const a = currentAtividades.find(x=>x.id===id); if(!a) return;
-  document.getElementById('detailId').value = id;
-  document.getElementById('detailIcon').textContent = getActivityIcon(a.titulo);
-  document.getElementById('detailTitle').textContent = a.titulo;
-  document.getElementById('detailTime').textContent = a.horario_inicio+(a.horario_fim?' – '+a.horario_fim:'');
-  document.getElementById('detailConcluida').checked = !!a.concluida;
-  document.getElementById('detailNotas').value = a.notas||'';
-  const addrEl = document.getElementById('detailAddr');
-  if(a.endereco) {
-    const mapsUrl = 'https://maps.google.com/maps?q='+encodeURIComponent(a.endereco);
-    addrEl.innerHTML = `<div class="detail-addr">📍 <a href="${mapsUrl}" target="_blank" rel="noopener">${escapeHtml(a.endereco)}</a></div>`;
-  } else { addrEl.innerHTML=''; }
+function openAtividadeDetail(id){
+  const a=currentAtividades.find(x=>x.id===id); if(!a) return;
+  document.getElementById('detailId').value=id;
+  document.getElementById('detailIcon').textContent=getActivityIcon(a.titulo);
+  document.getElementById('detailTitle').textContent=a.titulo;
+  document.getElementById('detailTime').textContent=a.horario_inicio+(a.horario_fim?' – '+a.horario_fim:'');
+  document.getElementById('detailConcluida').checked=!!a.concluida;
+  document.getElementById('detailNotas').value=a.notas||'';
+  const addrEl=document.getElementById('detailAddr');
+  addrEl.innerHTML=a.endereco
+    ?`<a href="https://maps.google.com/maps?q=${encodeURIComponent(a.endereco)}" target="_blank" rel="noopener"
+          class="text-sm text-blue-600 flex items-center gap-1.5 mb-1">📍 ${esc(a.endereco)}</a>`:''  ;
   document.getElementById('atividadeOverlay').classList.add('show');
 }
 function closeAtividadeDetail(){ document.getElementById('atividadeOverlay').classList.remove('show'); }
-
-async function saveAtividadeDetail() {
-  const id = document.getElementById('detailId').value;
-  const concluida = document.getElementById('detailConcluida').checked;
-  const notas = document.getElementById('detailNotas').value;
-  const a = currentAtividades.find(x=>x.id===id); if(!a) return;
-  try {
-    const resp = await fetch('/api/roteiros',{
-      method:'PATCH', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({id,concluida,notas})
-    });
+async function saveAtividadeDetail(){
+  const id=document.getElementById('detailId').value;
+  const concluida=document.getElementById('detailConcluida').checked;
+  const notas=document.getElementById('detailNotas').value;
+  const a=currentAtividades.find(x=>x.id===id); if(!a) return;
+  try{
+    const resp=await fetch('/api/roteiros',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,concluida,notas})});
     if(!resp.ok){showToast('Erro ao salvar.');return;}
     a.concluida=concluida; a.notas=notas;
-    closeAtividadeDetail();
-    renderRoteiroDetail();
-    showToast('Salvo!');
-  } catch(e){ showToast('Sem conexão — tente de novo.'); }
+    closeAtividadeDetail(); renderRoteiroDetail(); showToast('Salvo!');
+  }catch(e){showToast('Sem conexão — tente de novo.');}
 }
-
-async function importarOrlando() {
-  const btn = document.querySelector('.import-btn');
-  if(btn){ btn.textContent='⏳ Importando...'; btn.disabled=true; }
-  try {
-    const resp = await fetch('/api/roteiros',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(ORLANDO_TRIP)
-    });
-    if(!resp.ok){showToast('Erro ao importar. Tente de novo.');if(btn){btn.textContent='✈️ Importar Roteiro Orlando 2026';btn.disabled=false;}return;}
-    showToast('Roteiro importado!');
-    await loadRoteiro();
-  } catch(e){ showToast('Sem conexão — tente de novo.'); if(btn){btn.textContent='✈️ Importar Roteiro Orlando 2026';btn.disabled=false;} }
+function openEditAct(id){
+  const a=currentAtividades.find(x=>x.id===id); if(!a) return;
+  closeAtividadeDetail();
+  document.getElementById('editActId').value=id;
+  document.getElementById('editActTitulo').value=a.titulo||'';
+  document.getElementById('editActInicio').value=a.horario_inicio||'';
+  document.getElementById('editActFim').value=a.horario_fim||'';
+  document.getElementById('editActEndereco').value=a.endereco||'';
+  document.getElementById('editActOverlay').classList.add('show');
 }
-
-function fmtDate(d) {
-  if(!d) return '';
-  const [y,m,day] = d.split('-');
-  const months=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  return `${parseInt(day)} ${months[parseInt(m)-1]}`;
+function closeEditAct(){ document.getElementById('editActOverlay').classList.remove('show'); }
+async function saveEditAct(){
+  const id=document.getElementById('editActId').value;
+  const titulo=document.getElementById('editActTitulo').value.trim();
+  const horarioInicio=document.getElementById('editActInicio').value;
+  const horarioFim=document.getElementById('editActFim').value;
+  const endereco=document.getElementById('editActEndereco').value.trim();
+  if(!titulo){showToast('Informe o título.');return;}
+  const a=currentAtividades.find(x=>x.id===id); if(!a) return;
+  try{
+    const resp=await fetch('/api/roteiros',{method:'PATCH',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id,action:'editAtividade',titulo,horarioInicio,horarioFim,endereco,concluida:a.concluida,notas:a.notas||''})});
+    if(!resp.ok){showToast('Erro ao salvar.');return;}
+    a.titulo=titulo; a.horario_inicio=horarioInicio; a.horario_fim=horarioFim; a.endereco=endereco;
+    closeEditAct(); renderRoteiroDetail(); showToast('Atualizado!');
+  }catch(e){showToast('Sem conexão — tente de novo.');}
 }
-function fmtDateShort(d) {
-  if(!d) return '';
-  const [,m,day] = d.split('-');
-  return `${parseInt(day)}/${m}`;
+async function deleteAtividade(id){
+  if(!confirm('Excluir esta atividade?')) return;
+  try{
+    const resp=await fetch('/api/roteiros?atividadeId='+encodeURIComponent(id),{method:'DELETE'});
+    if(!resp.ok){showToast('Erro ao excluir.');return;}
+    currentAtividades=currentAtividades.filter(a=>a.id!==id);
+    closeEditAct(); renderRoteiroDetail(); showToast('Atividade excluída.');
+  }catch(e){showToast('Sem conexão — tente de novo.');}
+}
+async function importarOrlando(){
+  const btn=document.querySelector('#roteiroBody button');
+  if(btn){btn.textContent='⏳ Importando...';btn.disabled=true;}
+  try{
+    const r=await fetch('/api/roteiros',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ORLANDO_TRIP)});
+    if(!r.ok){showToast('Erro ao importar.');if(btn){btn.textContent='✈️ Importar Roteiro Orlando 2026';btn.disabled=false;}return;}
+    showToast('Roteiro importado!'); await loadRoteiro();
+  }catch(e){showToast('Sem conexão — tente de novo.');if(btn){btn.textContent='✈️ Importar Roteiro Orlando 2026';btn.disabled=false;}}
+}
+function openAddAct(diaNum,dataDia,diaSemana){
+  document.getElementById('addActRoteiroId').value=currentRoteiroId;
+  document.getElementById('addActDiaNum').value=diaNum;
+  document.getElementById('addActDataDia').value=dataDia||'';
+  document.getElementById('addActDiaSemana').value=diaSemana||'';
+  document.getElementById('addActDayInfo').textContent=`Dia ${diaNum}${diaSemana?' · '+diaSemana:''}${dataDia?' · '+fmtDate(dataDia):''}`;
+  ['addActTitulo','addActInicio','addActFim','addActEndereco'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('addActOverlay').classList.add('show');
+}
+function closeAddAct(){ document.getElementById('addActOverlay').classList.remove('show'); }
+async function saveAddAct(){
+  const roteiroId=document.getElementById('addActRoteiroId').value;
+  const diaNumero=parseInt(document.getElementById('addActDiaNum').value);
+  const titulo=document.getElementById('addActTitulo').value.trim();
+  const dataDia=document.getElementById('addActDataDia').value;
+  const diaSemana=document.getElementById('addActDiaSemana').value;
+  const horarioInicio=document.getElementById('addActInicio').value;
+  const horarioFim=document.getElementById('addActFim').value;
+  const endereco=document.getElementById('addActEndereco').value.trim();
+  if(!titulo){showToast('Informe o título da atividade.');return;}
+  try{
+    const resp=await fetch('/api/roteiros',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'addAtividade',roteiroId,diaNumero,titulo,dataDia,diaSemana,horarioInicio,horarioFim,endereco})});
+    if(!resp.ok){showToast('Erro ao adicionar.');return;}
+    closeAddAct(); expandedDays.add(diaNumero); showToast('Atividade adicionada!'); await loadRoteiro();
+  }catch(e){showToast('Sem conexão — tente de novo.');}
+}
+function openAddDay(){
+  ['addDayDate','addDayTitulo','addDayInicio'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('addDayOverlay').classList.add('show');
+}
+function closeAddDay(){ document.getElementById('addDayOverlay').classList.remove('show'); }
+async function saveAddDay(){
+  const dateStr=document.getElementById('addDayDate').value;
+  const titulo=document.getElementById('addDayTitulo').value.trim();
+  const horarioInicio=document.getElementById('addDayInicio').value;
+  if(!dateStr){showToast('Selecione uma data.');return;}
+  if(!titulo){showToast('Informe o título da atividade.');return;}
+  const tripStart=new Date((currentRoteiro?.data_inicio||'2026-07-20')+'T00:00:00');
+  const dayDate=new Date(dateStr+'T00:00:00');
+  const diaNumero=Math.round((dayDate-tripStart)/864e5)+1;
+  if(diaNumero<1){showToast('Data anterior ao início da viagem.');return;}
+  const semanas=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  const diaSemana=semanas[dayDate.getDay()];
+  try{
+    const resp=await fetch('/api/roteiros',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'addAtividade',roteiroId:currentRoteiroId,diaNumero,dataDia:dateStr,diaSemana,titulo,horarioInicio,horarioFim:'',endereco:''})});
+    if(!resp.ok){showToast('Erro ao adicionar.');return;}
+    closeAddDay(); expandedDays.add(diaNumero); showToast('Dia adicionado!'); await loadRoteiro();
+  }catch(e){showToast('Sem conexão — tente de novo.');}
 }
 
 // ════════════════════════════════
-//  CONVERSOR  (API: @fawazahmed0/currency-api via jsDelivr — sem CSP extra)
+//  CONVERSOR
 // ════════════════════════════════
-async function initConversor() {
-  const selBase = document.getElementById('convBase').value;
-  if(Object.keys(convRates).length && convBase === selBase){ renderConversor(); return; }
-  convBase = selBase;
-  document.getElementById('convResults').innerHTML='<div class="conv-loading">Buscando cotações...</div>';
-  try {
-    const base = convBase.toLowerCase();
-    const resp = await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${base}.json`);
-    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = await resp.json();
-    const all = data[base];
-    convRates = {};
-    CURRENCIES.filter(c=>c!==convBase).forEach(c=>{ if(all[c.toLowerCase()]) convRates[c]=all[c.toLowerCase()]; });
-    convUpdatedAt = new Date(data.date+'T00:00:00');
+async function initConversor(){
+  const selBase=document.getElementById('convBase').value;
+  if(Object.keys(convRates).length&&convBase===selBase){renderConversor();return;}
+  convBase=selBase;
+  document.getElementById('convResults').innerHTML='<p class="text-center text-ink-light py-8">Buscando cotações...</p>';
+  try{
+    const r=await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${convBase.toLowerCase()}.json`);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d=await r.json(); const all=d[convBase.toLowerCase()];
+    convRates={};
+    CURRENCIES.filter(c=>c!==convBase).forEach(c=>{if(all[c.toLowerCase()]) convRates[c]=all[c.toLowerCase()];});
+    convUpdatedAt=new Date(d.date+'T00:00:00');
     renderConversor();
-  } catch(e){
-    console.error('[conversor]', e);
+  }catch(e){
     document.getElementById('convResults').innerHTML=`
-      <div class="conv-loading" style="padding:32px 16px;">
-        <p style="margin:0 0 14px;">Não foi possível buscar cotações.</p>
-        <button class="btn btn-ghost btn-block" onclick="convRates={};initConversor()">Tentar novamente</button>
+      <div class="text-center py-10">
+        <p class="text-ink-light mb-4">Não foi possível buscar cotações.</p>
+        <button onclick="convRates={};initConversor()" class="bg-paper-dim border-0 rounded-xl px-5 py-2.5 font-semibold text-sm text-ink cursor-pointer">Tentar novamente</button>
       </div>`;
   }
 }
-
-async function onConvBaseChange() {
-  convRates = {};
-  await initConversor();
-}
-
-function renderConversor() {
-  const amount = parseFloat(document.getElementById('convAmount').value)||0;
-  const targets = CURRENCIES.filter(c=>c!==convBase);
+async function onConvBaseChange(){ convRates={}; await initConversor(); }
+function renderConversor(){
+  const amount=parseFloat(document.getElementById('convAmount').value)||0;
   if(!Object.keys(convRates).length) return;
-  document.getElementById('convResults').innerHTML = targets.map(cur=>{
-    const rate = convRates[cur]||0;
-    const val = amount*rate;
-    const sym = CUR_SYMBOL[cur]||cur;
+  const targets=CURRENCIES.filter(c=>c!==convBase);
+  document.getElementById('convResults').innerHTML=targets.map(cur=>{
+    const rate=convRates[cur]||0, val=amount*rate, sym=CUR_SYMBOL[cur]||cur;
     return `
-    <div class="conv-result-card">
-      <span class="conv-result-flag">${CUR_FLAG[cur]||'🏳️'}</span>
-      <div class="conv-result-info">
-        <div class="conv-result-name">${CUR_NAME[cur]||cur}</div>
-        <div class="conv-result-code">${cur}</div>
+    <div class="flex items-center bg-white border border-line rounded-2xl px-4 py-3.5">
+      <span class="text-2xl mr-3">${CUR_FLAG[cur]||'🏳️'}</span>
+      <div class="flex-1">
+        <p class="text-xs text-ink-light font-medium m-0">${CUR_NAME[cur]||cur}</p>
+        <p class="font-grotesk font-bold text-sm text-ink m-0">${cur}</p>
       </div>
-      <div class="conv-result-value">${sym} ${val.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      <span class="font-grotesk font-bold text-xl text-ok">${sym} ${val.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>
     </div>`;
   }).join('');
   if(convUpdatedAt){
-    const d = convUpdatedAt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
-    document.getElementById('convUpdated').textContent = `Cotações de ${d} · Fonte: ECB via jsDelivr`;
+    const d=convUpdatedAt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    document.getElementById('convUpdated').textContent=`Cotações de ${d} · Fonte: ECB via jsDelivr`;
   }
-}
-
-// ════════════════════════════════
-//  ADICIONAR ATIVIDADE / DIA
-// ════════════════════════════════
-function openAddAct(diaNum, dataDia, diaSemana) {
-  document.getElementById('addActRoteiroId').value = currentRoteiroId;
-  document.getElementById('addActDiaNum').value = diaNum;
-  document.getElementById('addActDataDia').value = dataDia || '';
-  document.getElementById('addActDiaSemana').value = diaSemana || '';
-  document.getElementById('addActDayInfo').textContent =
-    `Dia ${diaNum}${diaSemana?' · '+diaSemana:''}${dataDia?' · '+fmtDateShort(dataDia):''}`;
-  document.getElementById('addActTitulo').value = '';
-  document.getElementById('addActInicio').value = '';
-  document.getElementById('addActFim').value = '';
-  document.getElementById('addActEndereco').value = '';
-  document.getElementById('addActOverlay').classList.add('show');
-}
-function closeAddAct() { document.getElementById('addActOverlay').classList.remove('show'); }
-
-async function saveAddAct() {
-  const roteiroId   = document.getElementById('addActRoteiroId').value;
-  const diaNumero   = parseInt(document.getElementById('addActDiaNum').value);
-  const titulo      = document.getElementById('addActTitulo').value.trim();
-  const dataDia     = document.getElementById('addActDataDia').value;
-  const diaSemana   = document.getElementById('addActDiaSemana').value;
-  const horarioInicio = document.getElementById('addActInicio').value;
-  const horarioFim  = document.getElementById('addActFim').value;
-  const endereco    = document.getElementById('addActEndereco').value.trim();
-  if(!titulo){ showToast('Informe o título da atividade.'); return; }
-  try {
-    const resp = await fetch('/api/roteiros', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'addAtividade', roteiroId, diaNumero, titulo, dataDia, diaSemana, horarioInicio, horarioFim, endereco })
-    });
-    if(!resp.ok){ showToast('Erro ao adicionar.'); return; }
-    closeAddAct();
-    expandedDays.add(diaNumero);
-    showToast('Atividade adicionada!');
-    await loadRoteiro();
-  } catch(e){ showToast('Sem conexão — tente de novo.'); }
-}
-
-function openAddDay() {
-  document.getElementById('addDayDate').value = '';
-  document.getElementById('addDayTitulo').value = '';
-  document.getElementById('addDayInicio').value = '';
-  document.getElementById('addDayOverlay').classList.add('show');
-}
-function closeAddDay() { document.getElementById('addDayOverlay').classList.remove('show'); }
-
-async function saveAddDay() {
-  const dateStr = document.getElementById('addDayDate').value;
-  const titulo  = document.getElementById('addDayTitulo').value.trim();
-  const horarioInicio = document.getElementById('addDayInicio').value;
-  if(!dateStr){ showToast('Selecione uma data.'); return; }
-  if(!titulo){ showToast('Informe o título da atividade.'); return; }
-  const tripStart = new Date((currentRoteiro?.data_inicio||'2026-07-20')+'T00:00:00');
-  const dayDate   = new Date(dateStr+'T00:00:00');
-  const diaNumero = Math.round((dayDate - tripStart)/(1000*60*60*24)) + 1;
-  if(diaNumero < 1){ showToast('Data anterior ao início da viagem.'); return; }
-  const semanas = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
-  const diaSemana = semanas[dayDate.getDay()];
-  try {
-    const resp = await fetch('/api/roteiros', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'addAtividade', roteiroId:currentRoteiroId, diaNumero, dataDia:dateStr, diaSemana, titulo, horarioInicio, horarioFim:'', endereco:'' })
-    });
-    if(!resp.ok){ showToast('Erro ao adicionar.'); return; }
-    closeAddDay();
-    expandedDays.add(diaNumero);
-    showToast('Dia adicionado!');
-    await loadRoteiro();
-  } catch(e){ showToast('Sem conexão — tente de novo.'); }
 }
 
 // ════════════════════════════════
 //  OFFLINE / CACHE
 // ════════════════════════════════
-function updateOfflineBar() {
-  document.getElementById('gcOfflineBar').classList.toggle('show', isOffline);
+function updateOfflineBar(){
+  document.getElementById('gcOfflineBar').classList.toggle('hidden',!isOffline);
+  document.getElementById('gcOfflineBar').classList.toggle('flex',isOffline);
 }
-function updateOnlineStatus() {
-  isOffline = !navigator.onLine;
-  updateOfflineBar();
-  renderCards();
-}
-async function clearCache() {
+function updateOnlineStatus(){ isOffline=!navigator.onLine; updateOfflineBar(); renderCards(); }
+async function clearCache(){
   if(!confirm('Ao limpar o cache, os dados offline serão apagados.\nDeseja continuar?')) return;
-  const keys = await caches.keys();
+  const keys=await caches.keys();
   await Promise.all(keys.map(k=>caches.delete(k)));
   showToast('Cache limpo. Conecte-se para atualizar.');
 }
-window.addEventListener('online', updateOnlineStatus);
-window.addEventListener('offline', updateOnlineStatus);
+window.addEventListener('online',updateOnlineStatus);
+window.addEventListener('offline',updateOnlineStatus);
 
 // ════════════════════════════════
 //  INIT

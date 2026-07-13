@@ -67,22 +67,40 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'PATCH') {
-      const { id, concluida, notas } = req.body;
+      const { id, action, concluida, notas, titulo, horarioInicio, horarioFim, endereco } = req.body;
       if (!id) return res.status(400).json({ error: 'id obrigatório.' });
       const check = await sql`
         SELECT a.id FROM atividades_roteiro a
         JOIN roteiros r ON r.id = a.roteiro_id
         WHERE a.id = ${id} AND r.user_id = ${userId}`;
       if (!check.length) return res.status(404).json({ error: 'Não encontrado.' });
-      await sql`
-        UPDATE atividades_roteiro
-        SET concluida = ${concluida ?? false}, notas = ${notas ?? ''}
-        WHERE id = ${id}`;
+      if (action === 'editAtividade') {
+        if (!titulo) return res.status(400).json({ error: 'Título obrigatório.' });
+        await sql`
+          UPDATE atividades_roteiro
+          SET titulo = ${titulo},
+              horario_inicio = ${horarioInicio || ''},
+              horario_fim    = ${horarioFim || ''},
+              endereco       = ${endereco || ''}
+          WHERE id = ${id}`;
+      } else {
+        await sql`
+          UPDATE atividades_roteiro
+          SET concluida = ${concluida ?? false}, notas = ${notas ?? ''}
+          WHERE id = ${id}`;
+      }
       return res.status(200).json({ ok: true });
     }
 
     if (req.method === 'DELETE') {
-      const { id } = req.query;
+      const { id, atividadeId } = req.query;
+      if (atividadeId) {
+        await sql`
+          DELETE FROM atividades_roteiro
+          WHERE id = ${atividadeId}
+            AND roteiro_id IN (SELECT id FROM roteiros WHERE user_id = ${userId})`;
+        return res.status(200).json({ ok: true });
+      }
       if (!id) return res.status(400).json({ error: 'id obrigatório.' });
       await sql`DELETE FROM roteiros WHERE id = ${id} AND user_id = ${userId}`;
       return res.status(200).json({ ok: true });
