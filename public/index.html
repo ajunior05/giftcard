@@ -185,6 +185,8 @@ tailwind.config = {
             class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-xl text-ink cursor-pointer flex-shrink-0">‹</button>
     <h2 class="font-grotesk font-bold text-xl text-ink flex-1 m-0">Roteiro</h2>
     <span id="roteiroProgressBadge" class="text-sm font-bold text-blue-600"></span>
+    <button onclick="openNovoRoteiro()"
+            class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-xl text-ink cursor-pointer flex-shrink-0">+</button>
   </header>
   <div class="flex-1 px-5 pb-10 overflow-y-auto" id="roteiroBody">
     <p class="text-center text-ink-light py-10">Carregando...</p>
@@ -427,6 +429,36 @@ tailwind.config = {
     <div class="flex gap-3 mt-6">
       <button onclick="closeAddDay()" class="flex-1 py-3.5 rounded-xl bg-paper-dim text-ink font-semibold text-sm cursor-pointer">Cancelar</button>
       <button onclick="saveAddDay()" class="flex-1 py-3.5 rounded-xl bg-brand text-white font-semibold text-sm cursor-pointer">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="novoRoteiroOverlay">
+  <div class="sheet-inner w-full max-w-[520px] mx-auto bg-paper rounded-t-3xl px-5 pt-3 pb-8">
+    <div class="w-9 h-1 bg-line rounded-full mx-auto mb-5"></div>
+    <h2 class="font-grotesk font-bold text-xl text-ink mb-5">Novo roteiro</h2>
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Título *</label>
+    <input type="text" id="nrTitulo" placeholder="Ex: Viagem Europa 2027"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base mb-4">
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Destino</label>
+    <input type="text" id="nrDestino" placeholder="Ex: Paris, França"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base mb-4">
+    <div class="flex gap-3 mb-4">
+      <div class="flex-1">
+        <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Início</label>
+        <input type="date" id="nrInicio" class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+      </div>
+      <div class="flex-1">
+        <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Fim</label>
+        <input type="date" id="nrFim" class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base">
+      </div>
+    </div>
+    <label class="block text-xs font-semibold uppercase tracking-wide text-ink-mid mb-1.5">Adultos</label>
+    <input type="number" id="nrAdultos" value="1" min="1" max="20"
+           class="w-full px-4 py-3.5 rounded-xl border border-line bg-white text-ink text-base mb-6">
+    <div class="flex gap-3">
+      <button onclick="closeNovoRoteiro()" class="flex-1 py-3.5 rounded-xl bg-paper-dim text-ink font-semibold text-sm cursor-pointer border-0">Cancelar</button>
+      <button onclick="saveNovoRoteiro()" class="flex-1 py-3.5 rounded-xl bg-brand text-white font-semibold text-sm cursor-pointer border-0">Criar</button>
     </div>
   </div>
 </div>
@@ -826,8 +858,9 @@ async function loadRoteiros(){
 }
 async function loadRoteiro(){
   await loadRoteiros();
-  if(!roteiros.length){ renderRoteiroEmpty(); return; }
-  currentRoteiroId=roteiros[0].id;
+  if(!roteiros.length){ currentRoteiro=null; currentRoteiroId=null; renderRoteiroEmpty(); return; }
+  const still=currentRoteiroId&&roteiros.find(r=>r.id===currentRoteiroId);
+  currentRoteiroId=still?currentRoteiroId:roteiros[0].id;
   try{
     const r=await fetch('/api/roteiros?id='+currentRoteiroId);
     const d=await r.json();
@@ -849,8 +882,12 @@ function renderRoteiroEmpty(){
   document.getElementById('roteiroBody').innerHTML=`
     <div class="text-center py-16 px-4">
       <div class="text-5xl mb-4">🗓️</div>
-      <p class="font-grotesk font-bold text-lg text-ink mb-1">Roteiro não importado</p>
-      <p class="text-sm text-ink-light mb-6">Importe o roteiro de Orlando para acompanhar dia a dia.</p>
+      <p class="font-grotesk font-bold text-lg text-ink mb-1">Nenhum roteiro</p>
+      <p class="text-sm text-ink-light mb-6">Crie um roteiro ou importe o roteiro de Orlando.</p>
+      <button onclick="openNovoRoteiro()"
+              class="w-full py-4 rounded-2xl bg-brand text-white font-grotesk font-bold text-base border-0 cursor-pointer mb-3">
+        + Criar novo roteiro
+      </button>
       <button onclick="importarOrlando()"
               class="w-full py-4 rounded-2xl bg-blue-600 text-white font-grotesk font-bold text-base border-0 cursor-pointer">
         ✈️ Importar Roteiro Orlando 2026
@@ -948,8 +985,18 @@ function renderRoteiroDetail(){
       </button>
     </div>`;
 
-  document.getElementById('roteiroBody').innerHTML=hero+daysHtml+novoDia;
-  if(roteiros[0]){roteiros[0]._done=done;roteiros[0]._total=total;updateRoteiroHomeSub();}
+  const selectorHtml=roteiros.length>1?`
+    <div class="flex gap-2 overflow-x-auto pb-1 mb-4" style="scrollbar-width:none">
+      ${roteiros.map(r=>`
+        <button onclick="switchRoteiro('${r.id}')"
+                class="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border-0 cursor-pointer whitespace-nowrap
+                       ${r.id===currentRoteiroId?'bg-blue-600 text-white':'bg-paper-dim text-ink'}">
+          ${esc(r.titulo)}
+        </button>`).join('')}
+    </div>`:'';
+  document.getElementById('roteiroBody').innerHTML=selectorHtml+hero+daysHtml+novoDia;
+  const cur=roteiros.find(r=>r.id===currentRoteiroId);
+  if(cur){cur._done=done;cur._total=total;updateRoteiroHomeSub();}
 }
 function toggleDay(dn){
   if(expandedDays.has(dn))expandedDays.delete(dn);else expandedDays.add(dn);
@@ -1017,6 +1064,48 @@ async function deleteAtividade(id){
     currentAtividades=currentAtividades.filter(a=>a.id!==id);
     closeEditAct(); renderRoteiroDetail(); showToast('Atividade excluída.');
   }catch(e){showToast('Sem conexão — tente de novo.');}
+}
+function openNovoRoteiro(){
+  document.getElementById('nrTitulo').value='';
+  document.getElementById('nrDestino').value='';
+  document.getElementById('nrInicio').value='';
+  document.getElementById('nrFim').value='';
+  document.getElementById('nrAdultos').value='1';
+  document.getElementById('novoRoteiroOverlay').classList.add('show');
+}
+function closeNovoRoteiro(){ document.getElementById('novoRoteiroOverlay').classList.remove('show'); }
+async function saveNovoRoteiro(){
+  const titulo=document.getElementById('nrTitulo').value.trim();
+  if(!titulo){showToast('Informe o título.');return;}
+  const body={
+    titulo,
+    destino:document.getElementById('nrDestino').value.trim(),
+    dataInicio:document.getElementById('nrInicio').value||null,
+    dataFim:document.getElementById('nrFim').value||null,
+    adultos:parseInt(document.getElementById('nrAdultos').value)||1,
+    atividades:[]
+  };
+  try{
+    const resp=await fetch('/api/roteiros',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!resp.ok){showToast('Erro ao criar roteiro.');return;}
+    const {id}=await resp.json();
+    closeNovoRoteiro();
+    currentRoteiroId=id;
+    await loadRoteiro();
+    showToast('Roteiro criado!');
+  }catch(e){showToast('Sem conexão — tente de novo.');}
+}
+async function switchRoteiro(id){
+  if(id===currentRoteiroId) return;
+  currentRoteiroId=id; expandedDays=new Set();
+  try{
+    const r=await fetch('/api/roteiros?id='+id);
+    const d=await r.json();
+    currentRoteiro=d.roteiro; currentAtividades=d.atividades||[];
+    const todayNum=getTodayDayNumber();
+    if(todayNum) expandedDays.add(todayNum); else if(!expandedDays.size&&currentAtividades.length) expandedDays.add(currentAtividades[0].dia_numero);
+    renderRoteiroDetail();
+  }catch(e){showToast('Erro ao carregar roteiro.');}
 }
 async function deleteRoteiro(){
   if(!confirm('Excluir este roteiro e todas as suas atividades?')) return;
