@@ -455,6 +455,49 @@ textarea{resize:vertical;min-height:80px;}
   </div>
 </div>
 
+<!-- ═══ OVERLAY: ADD ACTIVITY ═══ -->
+<div class="overlay" id="addActOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Nova atividade</h2>
+    <input type="hidden" id="addActRoteiroId">
+    <input type="hidden" id="addActDiaNum">
+    <input type="hidden" id="addActDataDia">
+    <input type="hidden" id="addActDiaSemana">
+    <p id="addActDayInfo" style="color:var(--ink-mid);font-size:13.5px;margin:-8px 0 14px;font-weight:600;"></p>
+    <label>Título *</label>
+    <input type="text" id="addActTitulo" placeholder="Ex: Jantar no CityWalk">
+    <label>Horário início</label>
+    <input type="time" id="addActInicio">
+    <label>Horário fim</label>
+    <input type="time" id="addActFim">
+    <label>Endereço (opcional)</label>
+    <input type="text" id="addActEndereco" placeholder="Ex: 6000 Universal Blvd, Orlando">
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeAddAct()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAddAct()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ OVERLAY: ADD DAY ═══ -->
+<div class="overlay" id="addDayOverlay">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>Novo dia</h2>
+    <label>Data *</label>
+    <input type="date" id="addDayDate">
+    <label>Primeira atividade *</label>
+    <input type="text" id="addDayTitulo" placeholder="Ex: Visitar ICON Park">
+    <label>Horário início</label>
+    <input type="time" id="addDayInicio">
+    <div class="sheet-actions">
+      <button class="btn btn-ghost" onclick="closeAddDay()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAddDay()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1004,9 +1047,13 @@ function renderRoteiroDetail() {
             </div>
             ${a.notas?'<div class="act-note-dot"></div>':''}
           </div>`).join('')}
+      <button onclick="event.stopPropagation();openAddAct(${dn},'${acts[0]?.data_dia||''}','${acts[0]?.dia_semana||''}')" style="width:100%;padding:11px 16px;border:none;border-top:1px dashed var(--line);background:transparent;color:var(--orange-deep);font-size:13px;font-weight:600;cursor:pointer;text-align:left;">+ Adicionar atividade neste dia</button>
       </div>
     </div>`;
-  }).join('');
+  }).join('') + `
+  <div style="padding:16px 0 0;">
+    <button onclick="openAddDay()" style="width:100%;padding:14px;border:1.5px dashed var(--line);border-radius:14px;background:transparent;color:var(--ink-mid);font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;cursor:pointer;">+ Novo dia</button>
+  </div>`;
 
   document.getElementById('roteiroBody').innerHTML = heroHtml + daysHtml;
 
@@ -1085,38 +1132,42 @@ function fmtDateShort(d) {
 }
 
 // ════════════════════════════════
-//  CONVERSOR
+//  CONVERSOR  (API: @fawazahmed0/currency-api via jsDelivr — sem CSP extra)
 // ════════════════════════════════
 async function initConversor() {
-  if(Object.keys(convRates).length && convBase===document.getElementById('convBase').value) {
-    renderConversor(); return;
-  }
-  convBase = document.getElementById('convBase').value;
+  const selBase = document.getElementById('convBase').value;
+  if(Object.keys(convRates).length && convBase === selBase){ renderConversor(); return; }
+  convBase = selBase;
   document.getElementById('convResults').innerHTML='<div class="conv-loading">Buscando cotações...</div>';
   try {
-    const others = CURRENCIES.filter(c=>c!==convBase).join(',');
-    const resp = await fetch(`https://api.frankfurter.app/latest?from=${convBase}&to=${others}`);
+    const base = convBase.toLowerCase();
+    const resp = await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${base}.json`);
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
-    convRates = data.rates;
-    convUpdatedAt = new Date();
+    const all = data[base];
+    convRates = {};
+    CURRENCIES.filter(c=>c!==convBase).forEach(c=>{ if(all[c.toLowerCase()]) convRates[c]=all[c.toLowerCase()]; });
+    convUpdatedAt = new Date(data.date+'T00:00:00');
     renderConversor();
   } catch(e){
-    document.getElementById('convResults').innerHTML='<div class="conv-loading">Sem conexão — não foi possível buscar cotações.</div>';
+    console.error('[conversor]', e);
+    document.getElementById('convResults').innerHTML=`
+      <div class="conv-loading" style="padding:32px 16px;">
+        <p style="margin:0 0 14px;">Não foi possível buscar cotações.</p>
+        <button class="btn btn-ghost btn-block" onclick="convRates={};initConversor()">Tentar novamente</button>
+      </div>`;
   }
 }
 
 async function onConvBaseChange() {
   convRates = {};
-  convBase = document.getElementById('convBase').value;
   await initConversor();
 }
 
 function renderConversor() {
   const amount = parseFloat(document.getElementById('convAmount').value)||0;
-  const base = document.getElementById('convBase').value;
-  const targets = CURRENCIES.filter(c=>c!==base);
+  const targets = CURRENCIES.filter(c=>c!==convBase);
   if(!Object.keys(convRates).length) return;
-
   document.getElementById('convResults').innerHTML = targets.map(cur=>{
     const rate = convRates[cur]||0;
     const val = amount*rate;
@@ -1131,11 +1182,84 @@ function renderConversor() {
       <div class="conv-result-value">${sym} ${val.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
     </div>`;
   }).join('');
-
-  if(convUpdatedAt) {
-    document.getElementById('convUpdated').textContent =
-      'Cotações de '+convUpdatedAt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' · Fonte: Frankfurter / ECB';
+  if(convUpdatedAt){
+    const d = convUpdatedAt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    document.getElementById('convUpdated').textContent = `Cotações de ${d} · Fonte: ECB via jsDelivr`;
   }
+}
+
+// ════════════════════════════════
+//  ADICIONAR ATIVIDADE / DIA
+// ════════════════════════════════
+function openAddAct(diaNum, dataDia, diaSemana) {
+  document.getElementById('addActRoteiroId').value = currentRoteiroId;
+  document.getElementById('addActDiaNum').value = diaNum;
+  document.getElementById('addActDataDia').value = dataDia || '';
+  document.getElementById('addActDiaSemana').value = diaSemana || '';
+  document.getElementById('addActDayInfo').textContent =
+    `Dia ${diaNum}${diaSemana?' · '+diaSemana:''}${dataDia?' · '+fmtDateShort(dataDia):''}`;
+  document.getElementById('addActTitulo').value = '';
+  document.getElementById('addActInicio').value = '';
+  document.getElementById('addActFim').value = '';
+  document.getElementById('addActEndereco').value = '';
+  document.getElementById('addActOverlay').classList.add('show');
+}
+function closeAddAct() { document.getElementById('addActOverlay').classList.remove('show'); }
+
+async function saveAddAct() {
+  const roteiroId   = document.getElementById('addActRoteiroId').value;
+  const diaNumero   = parseInt(document.getElementById('addActDiaNum').value);
+  const titulo      = document.getElementById('addActTitulo').value.trim();
+  const dataDia     = document.getElementById('addActDataDia').value;
+  const diaSemana   = document.getElementById('addActDiaSemana').value;
+  const horarioInicio = document.getElementById('addActInicio').value;
+  const horarioFim  = document.getElementById('addActFim').value;
+  const endereco    = document.getElementById('addActEndereco').value.trim();
+  if(!titulo){ showToast('Informe o título da atividade.'); return; }
+  try {
+    const resp = await fetch('/api/roteiros', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'addAtividade', roteiroId, diaNumero, titulo, dataDia, diaSemana, horarioInicio, horarioFim, endereco })
+    });
+    if(!resp.ok){ showToast('Erro ao adicionar.'); return; }
+    closeAddAct();
+    expandedDays.add(diaNumero);
+    showToast('Atividade adicionada!');
+    await loadRoteiro();
+  } catch(e){ showToast('Sem conexão — tente de novo.'); }
+}
+
+function openAddDay() {
+  document.getElementById('addDayDate').value = '';
+  document.getElementById('addDayTitulo').value = '';
+  document.getElementById('addDayInicio').value = '';
+  document.getElementById('addDayOverlay').classList.add('show');
+}
+function closeAddDay() { document.getElementById('addDayOverlay').classList.remove('show'); }
+
+async function saveAddDay() {
+  const dateStr = document.getElementById('addDayDate').value;
+  const titulo  = document.getElementById('addDayTitulo').value.trim();
+  const horarioInicio = document.getElementById('addDayInicio').value;
+  if(!dateStr){ showToast('Selecione uma data.'); return; }
+  if(!titulo){ showToast('Informe o título da atividade.'); return; }
+  const tripStart = new Date((currentRoteiro?.data_inicio||'2026-07-20')+'T00:00:00');
+  const dayDate   = new Date(dateStr+'T00:00:00');
+  const diaNumero = Math.round((dayDate - tripStart)/(1000*60*60*24)) + 1;
+  if(diaNumero < 1){ showToast('Data anterior ao início da viagem.'); return; }
+  const semanas = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+  const diaSemana = semanas[dayDate.getDay()];
+  try {
+    const resp = await fetch('/api/roteiros', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'addAtividade', roteiroId:currentRoteiroId, diaNumero, dataDia:dateStr, diaSemana, titulo, horarioInicio, horarioFim:'', endereco:'' })
+    });
+    if(!resp.ok){ showToast('Erro ao adicionar.'); return; }
+    closeAddDay();
+    expandedDays.add(diaNumero);
+    showToast('Dia adicionado!');
+    await loadRoteiro();
+  } catch(e){ showToast('Sem conexão — tente de novo.'); }
 }
 
 // ════════════════════════════════

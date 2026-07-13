@@ -26,7 +26,27 @@ module.exports = async (req, res) => {
     }
 
     if (req.method === 'POST') {
-      const { titulo, destino, dataInicio, dataFim, adultos, atividades } = req.body;
+      const { action, titulo, destino, dataInicio, dataFim, adultos, atividades,
+              roteiroId: rId, diaNumero, dataDia, diaSemana, horarioInicio, horarioFim, endereco } = req.body;
+
+      if (action === 'addAtividade') {
+        if (!rId || !titulo || !diaNumero) return res.status(400).json({ error: 'Campos obrigatórios.' });
+        const check = await sql`SELECT id FROM roteiros WHERE id = ${rId} AND user_id = ${userId}`;
+        if (!check.length) return res.status(403).json({ error: 'Não autorizado.' });
+        const maxOrd = await sql`
+          SELECT COALESCE(MAX(ordem), 0) AS m FROM atividades_roteiro
+          WHERE roteiro_id = ${rId} AND dia_numero = ${diaNumero}`;
+        const ordem = Number(maxOrd[0].m) + 1;
+        const rows = await sql`
+          INSERT INTO atividades_roteiro
+            (roteiro_id, dia_numero, data_dia, dia_semana, ordem, titulo, horario_inicio, horario_fim, endereco)
+          VALUES
+            (${rId}, ${diaNumero}, ${dataDia || null}, ${diaSemana || ''}, ${ordem},
+             ${titulo}, ${horarioInicio || ''}, ${horarioFim || ''}, ${endereco || ''})
+          RETURNING id`;
+        return res.status(200).json({ id: rows[0].id });
+      }
+
       if (!titulo) return res.status(400).json({ error: 'Título obrigatório.' });
       const rows = await sql`
         INSERT INTO roteiros (user_id, titulo, destino, data_inicio, data_fim, adultos)
