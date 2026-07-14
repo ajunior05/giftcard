@@ -62,9 +62,10 @@ module.exports = async (req, res) => {
         if (!rows.length) return res.status(404).json({ error: 'Roteiro não encontrado.' });
         const r = rows[0];
         if (r.user_id === userId) return res.status(400).json({ error: 'Este roteiro já é seu.' });
+        const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
         const newRows = await sql`
           INSERT INTO roteiros (user_id, titulo, destino, data_inicio, data_fim, adultos)
-          VALUES (${userId}, ${r.titulo + ' (importado)'}, ${r.destino}, ${r.data_inicio}, ${r.data_fim}, ${r.adultos})
+          VALUES (${userId}, ${`${r.titulo} (importado ${now})`}, ${r.destino}, ${r.data_inicio}, ${r.data_fim}, ${r.adultos})
           RETURNING id`;
         const newId = newRows[0].id;
         const atividades = await sql`
