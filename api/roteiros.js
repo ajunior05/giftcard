@@ -6,9 +6,26 @@ function getUserId(req) {
 }
 
 module.exports = async (req, res) => {
+  const sql = getSql();
+
+  // Public access by token — no auth required
+  if (req.method === 'GET' && req.query.token) {
+    try {
+      const token = req.query.token;
+      const rows = await sql`SELECT * FROM roteiros WHERE token_publico = ${token}`;
+      if (!rows.length) return res.status(404).json({ error: 'Roteiro não encontrado.' });
+      const roteiro = rows[0];
+      const atividades = await sql`
+        SELECT * FROM atividades_roteiro WHERE roteiro_id = ${roteiro.id}
+        ORDER BY dia_numero, ordem`;
+      return res.status(200).json({ roteiro, atividades });
+    } catch (e) {
+      return res.status(500).json({ error: 'Erro no servidor.' });
+    }
+  }
+
   const userId = getUserId(req);
   if (!userId) return res.status(401).json({ error: 'Não autenticado.' });
-  const sql = getSql();
 
   try {
     if (req.method === 'GET') {
@@ -28,6 +45,40 @@ module.exports = async (req, res) => {
     if (req.method === 'POST') {
       const { action, titulo, destino, dataInicio, dataFim, adultos, atividades,
               roteiroId: rId, diaNumero, dataDia, diaSemana, horarioInicio, horarioFim, endereco } = req.body;
+
+      if (action === 'gerarToken') {
+        const { id } = req.body;
+        const check = await sql`SELECT id, token_publico FROM roteiros WHERE id = ${id} AND user_id = ${userId}`;
+        if (!check.length) return res.status(403).json({ error: 'Não autorizado.' });
+        if (check[0].token_publico) return res.status(200).json({ token: check[0].token_publico });
+        const token = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+        await sql`UPDATE roteiros SET token_publico = ${token} WHERE id = ${id}`;
+        return res.status(200).json({ token });
+      }
+
+      if (action === 'importarComToken') {
+        const { token } = req.body;
+        const rows = await sql`SELECT * FROM roteiros WHERE token_publico = ${token}`;
+        if (!rows.length) return res.status(404).json({ error: 'Roteiro não encontrado.' });
+        const r = rows[0];
+        if (r.user_id === userId) return res.status(400).json({ error: 'Este roteiro já é seu.' });
+        const newRows = await sql`
+          INSERT INTO roteiros (user_id, titulo, destino, data_inicio, data_fim, adultos)
+          VALUES (${userId}, ${r.titulo + ' (importado)'}, ${r.destino}, ${r.data_inicio}, ${r.data_fim}, ${r.adultos})
+          RETURNING id`;
+        const newId = newRows[0].id;
+        const atividades = await sql`
+          SELECT * FROM atividades_roteiro WHERE roteiro_id = ${r.id} ORDER BY dia_numero, ordem`;
+        for (const a of atividades) {
+          await sql`
+            INSERT INTO atividades_roteiro
+              (roteiro_id, dia_numero, data_dia, dia_semana, ordem, titulo, horario_inicio, horario_fim, endereco, notas)
+            VALUES
+              (${newId}, ${a.dia_numero}, ${a.data_dia}, ${a.dia_semana}, ${a.ordem},
+               ${a.titulo}, ${a.horario_inicio}, ${a.horario_fim}, ${a.endereco}, ${a.notas})`;
+        }
+        return res.status(200).json({ id: newId });
+      }
 
       if (action === 'addAtividade') {
         if (!rId || !titulo || !diaNumero) return res.status(400).json({ error: 'Campos obrigatórios.' });

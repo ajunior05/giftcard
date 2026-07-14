@@ -208,6 +208,20 @@ tailwind.config = {
 </div>
 
 <!-- ══════════════════════════════════
+     ROTEIRO PÚBLICO (compartilhado)
+══════════════════════════════════ -->
+<div id="publicRoteiroScreen" class="screen hidden">
+  <header class="flex items-center gap-3 px-5 pt-5 pb-3">
+    <button onclick="voltarDoPublico()"
+            class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-xl text-ink cursor-pointer flex-shrink-0">‹</button>
+    <h2 class="font-grotesk font-bold text-xl text-ink flex-1 m-0">Roteiro compartilhado</h2>
+  </header>
+  <div class="flex-1 px-5 pb-10 overflow-y-auto" id="publicRoteiroBody">
+    <p class="text-center text-ink-light py-10">Carregando...</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
      CONVERSOR
 ══════════════════════════════════ -->
 <div id="conversorScreen" class="screen hidden">
@@ -507,6 +521,19 @@ tailwind.config = {
   </div>
 </div>
 
+<div class="overlay" id="shareRoteiroOverlay">
+  <div class="sheet-inner w-full max-w-[520px] mx-auto bg-paper rounded-t-3xl px-5 pt-3 pb-8">
+    <div class="w-9 h-1 bg-line rounded-full mx-auto mb-5"></div>
+    <h2 class="font-grotesk font-bold text-xl text-ink mb-1">🔗 Compartilhar roteiro</h2>
+    <p class="text-sm text-ink-light mb-4">Qualquer pessoa com este link pode visualizar e importar o roteiro.</p>
+    <div class="bg-paper-dim rounded-xl px-4 py-3 mb-5 font-mono text-sm text-ink-mid break-all leading-relaxed" id="shareLinkBox">Gerando link...</div>
+    <div class="flex gap-3">
+      <button onclick="closeShareRoteiro()" class="flex-1 py-3.5 rounded-xl bg-paper-dim text-ink font-semibold text-sm cursor-pointer border-0">Fechar</button>
+      <button onclick="copiarLinkRoteiro()" class="flex-1 py-3.5 rounded-xl bg-brand text-white font-semibold text-sm cursor-pointer border-0">📋 Copiar link</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast bg-ink text-white px-5 py-3 rounded-xl text-sm font-medium" id="toast"></div>
 
 <script>
@@ -518,6 +545,7 @@ let authMode = 'login', isOffline = !navigator.onLine;
 let roteiros = [], currentRoteiroId = null, currentRoteiro = null;
 let currentAtividades = [], expandedDays = new Set();
 let convRates = {}, convBase = 'USD', convUpdatedAt = null, convRefreshTimer = null;
+let publicRoteiroToken = null;
 
 // ════════════════════════════════
 //  CONSTANTS
@@ -726,6 +754,9 @@ async function logout(){
   cards=[]; roteiros=[]; currentRoteiro=null; currentAtividades=[];
 }
 async function checkSession(){
+  const params=new URLSearchParams(window.location.search);
+  const roteiroToken=params.get('roteiro');
+  if(roteiroToken){ await carregarRoteiroPublico(roteiroToken); return; }
   try{ const r=await fetch('/api/auth?action=me'); if(r.ok){await showHome();return;} }catch(e){}
   navigate('authScreen');
 }
@@ -738,6 +769,8 @@ async function showHome(){
   loadCards().then(updateGcHomeSub);
   loadRoteiros().then(updateRoteiroHomeSub);
   fetchQuickRate();
+  const pendingToken=sessionStorage.getItem('pendingRoteiroToken');
+  if(pendingToken){ sessionStorage.removeItem('pendingRoteiroToken'); publicRoteiroToken=pendingToken; importarRoteiroPublico(); }
 }
 function updateCountdown(){
   const el=document.getElementById('homeCountdown');
@@ -946,6 +979,108 @@ function copyCardField(id,field){
   const text=field==='code'?c.code:c.pin;
   navigator.clipboard.writeText(text||'').then(()=>showToast('Copiado!')).catch(()=>showToast('Não foi possível copiar.'));
 }
+
+// ════════════════════════════════
+//  COMPARTILHAR ROTEIRO
+// ════════════════════════════════
+async function compartilharRoteiro(){
+  document.getElementById('shareRoteiroOverlay').classList.add('show');
+  document.getElementById('shareLinkBox').textContent='Gerando link...';
+  try{
+    const r=await fetch('/api/roteiros',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'gerarToken',id:currentRoteiroId})});
+    const d=await r.json();
+    if(!r.ok||!d.token) throw new Error();
+    const link=`${location.origin}/?roteiro=${d.token}`;
+    document.getElementById('shareLinkBox').textContent=link;
+    document.getElementById('shareLinkBox').dataset.link=link;
+  }catch(e){ document.getElementById('shareLinkBox').textContent='Erro ao gerar link.'; }
+}
+function closeShareRoteiro(){ document.getElementById('shareRoteiroOverlay').classList.remove('show'); }
+function copiarLinkRoteiro(){
+  const link=document.getElementById('shareLinkBox').dataset.link; if(!link) return;
+  navigator.clipboard.writeText(link).then(()=>showToast('Link copiado!')).catch(()=>showToast('Não foi possível copiar.'));
+}
+async function carregarRoteiroPublico(token){
+  publicRoteiroToken=token;
+  navigate('publicRoteiroScreen');
+  document.getElementById('publicRoteiroBody').innerHTML='<p class="text-center text-ink-light py-10">Carregando roteiro...</p>';
+  try{
+    const r=await fetch('/api/roteiros?token='+encodeURIComponent(token));
+    if(!r.ok) throw new Error();
+    const d=await r.json();
+    renderRoteiroPublico(d.roteiro,d.atividades);
+  }catch(e){
+    document.getElementById('publicRoteiroBody').innerHTML=`
+      <div class="text-center py-16 px-4">
+        <div class="text-5xl mb-3">🔗</div>
+        <p class="font-grotesk font-bold text-lg text-ink mb-1">Link inválido</p>
+        <p class="text-sm text-ink-light">Este roteiro não existe ou o link expirou.</p>
+      </div>`;
+  }
+}
+function renderRoteiroPublico(roteiro,atividades){
+  const byDay={};
+  atividades.forEach(a=>{(byDay[a.dia_numero]=byDay[a.dia_numero]||[]).push(a);});
+  const days=[...new Set(atividades.map(a=>a.dia_numero))].sort((a,b)=>a-b);
+  const hero=`
+    <div class="bg-blue-50 rounded-2xl p-4 mb-4">
+      <p class="font-grotesk font-bold text-lg text-blue-700 m-0 mb-1">🌴 ${esc(roteiro.destino||'Roteiro')}</p>
+      <p class="text-sm text-blue-500 m-0">${fmtDateFull(roteiro.data_inicio)} – ${fmtDateFull(roteiro.data_fim)} · ${roteiro.adultos} adulto${roteiro.adultos>1?'s':''}</p>
+    </div>`;
+  const daysHtml=days.map(dn=>{
+    const acts=(byDay[dn]||[]).slice().sort((a,b)=>a.ordem-b.ordem);
+    const dataDia=acts[0]?.data_dia, diaSemana=acts[0]?.dia_semana;
+    return `
+      <div class="mb-4">
+        <p class="font-grotesk font-bold text-sm text-ink-mid uppercase tracking-wide mb-2">Dia ${dn}${diaSemana?' · '+diaSemana:''}${dataDia?' · '+fmtDate(dataDia):''}</p>
+        ${acts.map(a=>`
+          <div class="bg-white border border-line rounded-xl px-4 py-3 mb-2">
+            <div class="flex items-start gap-3">
+              <span class="text-xl mt-0.5">${getActivityIcon(a.titulo)}</span>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-sm text-ink m-0 mb-0.5">${esc(a.titulo)}</p>
+                ${a.horario_inicio?`<p class="text-xs text-ink-light m-0">${a.horario_inicio}${a.horario_fim?' – '+a.horario_fim:''}</p>`:''}
+                ${a.endereco?`<p class="text-xs text-ink-light m-0 truncate">${esc(a.endereco)}</p>`:''}
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>`;
+  }).join('');
+  document.getElementById('publicRoteiroBody').innerHTML=`
+    <p class="font-grotesk font-bold text-2xl text-ink mb-1">${esc(roteiro.titulo)}</p>
+    ${hero}${daysHtml}
+    <button onclick="importarRoteiroPublico()" id="importarBtn"
+            class="w-full py-4 rounded-2xl bg-brand text-white font-grotesk font-bold text-base border-0 cursor-pointer mt-2 mb-6">
+      ⬇️ Importar para minha conta
+    </button>`;
+}
+async function importarRoteiroPublico(){
+  const btn=document.getElementById('importarBtn');
+  if(btn){btn.textContent='⏳ Importando...';btn.disabled=true;}
+  const me=await fetch('/api/auth?action=me');
+  if(!me.ok){
+    sessionStorage.setItem('pendingRoteiroToken',publicRoteiroToken);
+    navigate('authScreen'); return;
+  }
+  try{
+    const r=await fetch('/api/roteiros',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'importarComToken',token:publicRoteiroToken})});
+    const d=await r.json();
+    if(!r.ok){showToast(d.error||'Erro ao importar.');if(btn){btn.textContent='⬇️ Importar para minha conta';btn.disabled=false;}return;}
+    showToast('Roteiro importado!');
+    voltarDoPublico();
+    await showHome();
+    await openRoteiroFromList(d.id);
+  }catch(e){showToast('Sem conexão — tente de novo.');if(btn){btn.textContent='⬇️ Importar para minha conta';btn.disabled=false;}}
+}
+function voltarDoPublico(){
+  publicRoteiroToken=null;
+  const url=new URL(window.location);
+  url.searchParams.delete('roteiro');
+  window.history.replaceState({},'',url);
+  checkSession();
+}
 async function pasteInto(id){
   const f=document.getElementById(id);
   try{ const t=await navigator.clipboard.readText(); if(t){f.value=t.trim();f.focus();showToast('Colado!');return;} }catch(e){}
@@ -1039,6 +1174,9 @@ function renderRoteiroDetail(){
       <div class="flex items-start justify-between mb-1">
         <p class="font-grotesk font-bold text-lg text-blue-700 m-0">🌴 ${esc(currentRoteiro.destino||'Orlando')}</p>
         <div class="flex gap-1 ml-2">
+          <button onclick="compartilharRoteiro()"
+                  class="w-7 h-7 flex items-center justify-center rounded-lg border-0 bg-transparent cursor-pointer text-base text-blue-400 hover:text-blue-700 transition-colors"
+                  title="Compartilhar roteiro">🔗</button>
           <button onclick="openEditRoteiro()"
                   class="w-7 h-7 flex items-center justify-center rounded-lg border-0 bg-transparent cursor-pointer text-base text-blue-400 hover:text-blue-700 transition-colors"
                   title="Editar roteiro">✏️</button>

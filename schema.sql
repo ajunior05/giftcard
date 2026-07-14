@@ -31,6 +31,7 @@ create table if not exists roteiros (
   data_inicio date,
   data_fim date,
   adultos integer default 1,
+  token_publico text unique,
   created_at timestamptz default now()
 );
 
