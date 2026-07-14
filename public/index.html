@@ -517,7 +517,7 @@ let cards = [], expandedCompanies = new Set(), gcSearchStr = '';
 let authMode = 'login', isOffline = !navigator.onLine;
 let roteiros = [], currentRoteiroId = null, currentRoteiro = null;
 let currentAtividades = [], expandedDays = new Set();
-let convRates = {}, convBase = 'USD', convUpdatedAt = null;
+let convRates = {}, convBase = 'USD', convUpdatedAt = null, convRefreshTimer = null;
 
 // ════════════════════════════════
 //  CONSTANTS
@@ -611,6 +611,7 @@ function fmtDateFull(d){
 //  NAVIGATION
 // ════════════════════════════════
 function navigate(id){
+  if(id!=='conversorScreen'){ clearInterval(convRefreshTimer); convRefreshTimer=null; }
   document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 }
@@ -690,7 +691,10 @@ async function deleteRoteiroById(id){
     renderRoteiroList(); showToast('Roteiro excluído.');
   }catch(e){showToast('Sem conexão — tente de novo.');}
 }
-function goToConversor(){ navigate('conversorScreen'); initConversor(); }
+function goToConversor(){
+  navigate('conversorScreen'); initConversor();
+  if(!convRefreshTimer) convRefreshTimer=setInterval(()=>{ convRates={}; initConversor(); }, 30*60*1000);
+}
 
 // ════════════════════════════════
 //  AUTH
@@ -1338,16 +1342,15 @@ async function saveAddDay(){
 // ════════════════════════════════
 async function initConversor(){
   const selBase=document.getElementById('convBase').value;
-  if(Object.keys(convRates).length&&convBase===selBase){renderConversor();return;}
   convBase=selBase;
   document.getElementById('convResults').innerHTML='<p class="text-center text-ink-light py-8">Buscando cotações...</p>';
   try{
-    const r=await fetch(`https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/${convBase.toLowerCase()}.json`);
+    const r=await fetch(`/api/rates?base=${convBase}`);
     if(!r.ok) throw new Error('HTTP '+r.status);
-    const d=await r.json(); const all=d[convBase.toLowerCase()];
-    convRates={};
-    CURRENCIES.filter(c=>c!==convBase).forEach(c=>{if(all[c.toLowerCase()]) convRates[c]=all[c.toLowerCase()];});
-    convUpdatedAt=new Date(d.date+'T00:00:00');
+    const d=await r.json();
+    if(d.error) throw new Error(d.error);
+    convRates=d.rates;
+    convUpdatedAt=d.updatedAt?new Date(d.updatedAt):new Date();
     renderConversor();
   }catch(e){
     document.getElementById('convResults').innerHTML=`
@@ -1375,8 +1378,8 @@ function renderConversor(){
     </div>`;
   }).join('');
   if(convUpdatedAt){
-    const d=convUpdatedAt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
-    document.getElementById('convUpdated').textContent=`Cotações de ${d} · Fonte: ECB via jsDelivr`;
+    const d=convUpdatedAt.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    document.getElementById('convUpdated').textContent=`Atualizado em ${d} · Fonte: ExchangeRate-API`;
   }
 }
 
