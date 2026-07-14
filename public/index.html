@@ -766,8 +766,9 @@ function updateRoteiroHomeSub(){
 }
 async function fetchQuickRate(){
   try{
-    const r=await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
-    const d=await r.json(); const rate=d.usd.brl;
+    const r=await fetch('/api/rates?base=USD');
+    const d=await r.json(); const rate=d.rates&&d.rates.BRL;
+    if(!rate) throw new Error();
     document.getElementById('conversorHomeSub').textContent=`1 USD = R$ ${Number(rate).toFixed(2)}`;
   }catch(e){document.getElementById('conversorHomeSub').textContent='Toque para converter';}
 }
