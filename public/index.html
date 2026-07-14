@@ -911,8 +911,8 @@ async function confirmDebit(){
 function openUse(id){
   const c=cards.find(x=>x.id===id); if(!c) return;
   const body=document.getElementById('useBody');
-  let media=`<div class="w-full bg-white border border-line rounded-2xl p-5 mb-3"><svg id="barcodeSvg" class="w-full h-auto"></svg></div><p class="font-mono tracking-wider text-sm text-ink-light mb-3">${esc(c.code)}</p>`;
-  if(c.pin) media+=`<div class="bg-paper-dim rounded-xl px-4 py-2.5 flex items-center gap-3 mb-3"><span class="text-xs uppercase tracking-widest font-bold text-ink-light">PIN</span><span class="font-mono font-bold text-lg tracking-wide">${esc(c.pin)}</span></div>`;
+  let media=`<div class="w-full bg-white border border-line rounded-2xl p-5 mb-3"><svg id="barcodeSvg" class="w-full h-auto"></svg></div><div class="flex items-center justify-between mb-3"><p class="font-mono tracking-wider text-sm text-ink-light m-0">${esc(c.code)}</p><button onclick="copyCardField('${c.id}','code')" class="text-xs font-semibold text-brand border border-brand rounded-lg px-2.5 py-1 bg-transparent cursor-pointer active:opacity-70">📋 Copiar</button></div>`;
+  if(c.pin) media+=`<div class="bg-paper-dim rounded-xl px-4 py-2.5 flex items-center gap-3 mb-3"><span class="text-xs uppercase tracking-widest font-bold text-ink-light">PIN</span><span class="font-mono font-bold text-lg tracking-wide flex-1">${esc(c.pin)}</span><button onclick="copyCardField('${c.id}','pin')" class="text-xs font-semibold text-brand border border-brand rounded-lg px-2.5 py-1 bg-transparent cursor-pointer active:opacity-70">📋 Copiar</button></div>`;
   body.innerHTML=`
     ${c.company?`<div class="w-16 h-16 rounded-2xl overflow-hidden bg-paper-dim flex items-center justify-center mb-2" id="clogo"></div><p class="text-xs font-bold uppercase tracking-widest text-brand-deep mb-1">${esc(c.company)}</p>`:''}
     <p class="font-grotesk font-bold text-2xl text-ink mb-0.5">${esc(c.name)}</p>
@@ -936,6 +936,11 @@ function openUse(id){
   catch(e){ document.querySelector('#useBody .rounded-2xl').innerHTML='<p class="text-red-500 text-sm">Não consegui gerar o código de barras.</p>'; }
 }
 function closeUse(){ document.getElementById('useScreen').classList.remove('show'); }
+function copyCardField(id,field){
+  const c=cards.find(x=>x.id===id); if(!c) return;
+  const text=field==='code'?c.code:c.pin;
+  navigator.clipboard.writeText(text||'').then(()=>showToast('Copiado!')).catch(()=>showToast('Não foi possível copiar.'));
+}
 async function pasteInto(id){
   const f=document.getElementById(id);
   try{ const t=await navigator.clipboard.readText(); if(t){f.value=t.trim();f.focus();showToast('Colado!');return;} }catch(e){}
