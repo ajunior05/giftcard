@@ -8,18 +8,21 @@ module.exports = async (req, res) => {
   if (!key) return res.status(500).json({ error: 'EXCHANGE_RATE_API_KEY não configurada.' });
 
   try {
-    const r = await fetch(`https://v6.exchangerate-api.com/v6/${key}/latest/${base}`);
+    const r = await fetch(`https://openexchangerates.org/api/latest.json?app_id=${key}&symbols=${SUPPORTED.join(',')}`);
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
-    if (d.result !== 'success') throw new Error(d['error-type'] || 'Erro na API');
+    if (d.error) throw new Error(d.description || 'Erro na API');
 
+    // free plan always returns USD as base; cross-calculate for other bases
+    const usdRates = d.rates;
+    const baseInUsd = usdRates[base] || 1;
     const rates = {};
     SUPPORTED.filter(c => c !== base).forEach(c => {
-      if (d.conversion_rates[c]) rates[c] = d.conversion_rates[c];
+      if (usdRates[c]) rates[c] = usdRates[c] / baseInUsd;
     });
 
     res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=3600');
-    res.json({ base, rates, updatedAt: d.time_last_update_utc });
+    res.json({ base, rates, updatedAt: new Date(d.timestamp * 1000).toUTCString() });
   } catch (e) {
     res.status(502).json({ error: 'Não foi possível buscar cotações.' });
   }
