@@ -37,10 +37,16 @@ module.exports = async (req, res) => {
       if (!id) return res.status(400).json({ error: 'id obrigatório.' });
 
       if (typeof debit === 'number') {
-        const rows = await sql`SELECT value FROM gift_cards WHERE id = ${id} AND user_id = ${userId}`;
+        const rows = await sql`SELECT company, name, value, currency FROM gift_cards WHERE id = ${id} AND user_id = ${userId}`;
         if (!rows.length) return res.status(404).json({ error: 'Não encontrado.' });
-        const novoSaldo = Math.max(0, Number(rows[0].value) - debit);
+        const saldoAnterior = Number(rows[0].value);
+        const novoSaldo = Math.max(0, saldoAnterior - debit);
+        const valorDebitado = saldoAnterior - novoSaldo;
         await sql`UPDATE gift_cards SET value = ${novoSaldo} WHERE id = ${id} AND user_id = ${userId}`;
+        await sql`
+          INSERT INTO historico_uso_gift_cards
+            (user_id, gift_card_id, card_name, company, valor_debitado, saldo_anterior, saldo_novo, currency)
+          VALUES (${userId}, ${id}, ${rows[0].name}, ${rows[0].company || ''}, ${valorDebitado}, ${saldoAnterior}, ${novoSaldo}, ${rows[0].currency || 'US$'})`;
         return res.status(200).json({ value: novoSaldo });
       }
 

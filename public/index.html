@@ -177,6 +177,8 @@ tailwind.config = {
     <button onclick="navigate('homeScreen')"
             class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-xl text-ink cursor-pointer flex-shrink-0">‹</button>
     <h2 class="font-grotesk font-bold text-xl text-ink flex-1 m-0">Gift Cards</h2>
+    <button onclick="openHistory()" title="Histórico de uso"
+            class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-lg text-ink cursor-pointer flex-shrink-0">🕓</button>
     <button onclick="openForm()"
             class="bg-brand text-white border-0 rounded-xl px-4 py-2 font-bold text-sm cursor-pointer">+ Adicionar</button>
   </header>
@@ -341,6 +343,18 @@ tailwind.config = {
             class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-lg cursor-pointer">✕</button>
   </div>
   <div class="flex-1 flex flex-col items-center justify-center px-6 text-center pb-6" id="useBody"></div>
+</div>
+
+<!-- ══════════════════════════════════
+     HISTÓRICO DE USO
+══════════════════════════════════ -->
+<div class="use-screen" id="historyScreen">
+  <div class="flex items-center gap-3 px-5 pt-5 pb-2">
+    <h2 class="font-grotesk font-bold text-xl text-ink flex-1 m-0">Histórico de uso</h2>
+    <button onclick="closeHistory()"
+            class="w-9 h-9 flex items-center justify-center rounded-full bg-paper-dim border-0 text-lg cursor-pointer">✕</button>
+  </div>
+  <div class="flex-1 px-5 pb-10 overflow-y-auto" id="historyBody"></div>
 </div>
 
 <!-- ══════════════════════════════════
@@ -540,7 +554,8 @@ tailwind.config = {
 // ════════════════════════════════
 //  STATE
 // ════════════════════════════════
-let cards = [], expandedCompanies = new Set(), gcSearchStr = '';
+let cards = [], expandedCompanies = new Set(), expandedZeros = new Set(), gcSearchStr = '';
+let historico = [];
 let authMode = 'login', isOffline = !navigator.onLine;
 let roteiros = [], currentRoteiroId = null, currentRoteiro = null;
 let currentAtividades = [], expandedDays = new Set();
@@ -821,31 +836,8 @@ function totalsByCurrency(list){
   list.forEach(c=>{const k=c.currency||'US$';t[k]=(t[k]||0)+Number(c.value||0);});
   return Object.entries(t).map(([k,v])=>fmtMoney(v,k)).join(' + ')||'US$ 0,00';
 }
-function renderCards(){
-  const list=gcSearchStr?cards.filter(c=>(c.name||'').toLowerCase().includes(gcSearchStr)||(c.company||'').toLowerCase().includes(gcSearchStr)):cards;
-  document.getElementById('gcTotal').textContent=totalsByCurrency(cards);
-  const area=document.getElementById('gcList');
-  if(!list.length){
-    area.innerHTML=`<div class="text-center py-16 text-ink-light"><div class="text-5xl mb-3">🎫</div>${gcSearchStr?'Nenhum resultado para "'+esc(gcSearchStr)+'"':'Nenhum gift card ainda.<br>Toque em "+ Adicionar" para começar.'}</div>`;
-    return;
-  }
-  const groups={};
-  list.forEach(c=>{const k=(c.company||'').trim()||'Outros';(groups[k]=groups[k]||[]).push(c);});
-  const names=Object.keys(groups).sort((a,b)=>a==='Outros'?1:b==='Outros'?-1:a.localeCompare(b,'pt-BR'));
-  area.innerHTML=names.map(company=>{
-    const gc=groups[company], open=expandedCompanies.has(company);
-    return `
-    <div class="${open?'company-open':''} mt-3" data-co="${esc(company)}">
-      <div onclick="toggleCompany('${esc(company)}')"
-           class="flex items-center justify-between px-4 py-3.5 rounded-2xl bg-white border border-line cursor-pointer select-none">
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-ink-light transition-transform ${open?'rotate-90':''}" style="display:inline-block">▶</span>
-          <span class="font-grotesk font-bold text-sm uppercase tracking-wide text-brand-deep">${esc(company)}</span>
-          <span class="text-xs text-ink-light">${gc.length} cartão${gc.length>1?'ões':''}</span>
-        </div>
-        <span class="font-grotesk font-bold text-sm">${totalsByCurrency(gc)}</span>
-      </div>
-      ${open?`<div class="pt-2">${gc.map(c=>`
+function cardRowHtml(c){
+  return `
         <div class="bg-white rounded-2xl my-3 border border-line overflow-hidden">
           <div onclick="openUse('${c.id}')" class="flex items-center justify-between px-5 py-4 cursor-pointer">
             <div>
@@ -862,12 +854,51 @@ function renderCards(){
             <button onclick="editCard('${c.id}')" class="flex-1 py-2.5 rounded-xl bg-paper-dim text-ink font-semibold text-sm min-w-[70px] cursor-pointer border-0">Editar</button>
             <button onclick="deleteCard('${c.id}')" class="py-2.5 px-3 rounded-xl bg-transparent text-red-500 font-semibold text-sm cursor-pointer border-0">✕</button>`:''}
           </div>
-        </div>`).join('')}</div>`:''}
+        </div>`;
+}
+function renderCards(){
+  const list=gcSearchStr?cards.filter(c=>(c.name||'').toLowerCase().includes(gcSearchStr)||(c.company||'').toLowerCase().includes(gcSearchStr)):cards;
+  document.getElementById('gcTotal').textContent=totalsByCurrency(cards);
+  const area=document.getElementById('gcList');
+  if(!list.length){
+    area.innerHTML=`<div class="text-center py-16 text-ink-light"><div class="text-5xl mb-3">🎫</div>${gcSearchStr?'Nenhum resultado para "'+esc(gcSearchStr)+'"':'Nenhum gift card ainda.<br>Toque em "+ Adicionar" para começar.'}</div>`;
+    return;
+  }
+  const groups={};
+  list.forEach(c=>{const k=(c.company||'').trim()||'Outros';(groups[k]=groups[k]||[]).push(c);});
+  const names=Object.keys(groups).sort((a,b)=>a==='Outros'?1:b==='Outros'?-1:a.localeCompare(b,'pt-BR'));
+  area.innerHTML=names.map(company=>{
+    const gc=groups[company].slice().sort((a,b)=>Number(b.value)-Number(a.value));
+    const open=expandedCompanies.has(company);
+    const nonZero=gc.filter(c=>Number(c.value)>0), zero=gc.filter(c=>Number(c.value)<=0);
+    const zOpen=expandedZeros.has(company);
+    return `
+    <div class="${open?'company-open':''} mt-3" data-co="${esc(company)}">
+      <div onclick="toggleCompany('${esc(company)}')"
+           class="flex items-center justify-between px-4 py-3.5 rounded-2xl bg-white border border-line cursor-pointer select-none">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-ink-light transition-transform ${open?'rotate-90':''}" style="display:inline-block">▶</span>
+          <span class="font-grotesk font-bold text-sm uppercase tracking-wide text-brand-deep">${esc(company)}</span>
+          <span class="text-xs text-ink-light">${gc.length} cartão${gc.length>1?'ões':''}</span>
+        </div>
+        <span class="font-grotesk font-bold text-sm">${totalsByCurrency(gc)}</span>
+      </div>
+      ${open?`<div class="pt-2">
+        ${nonZero.map(cardRowHtml).join('')}
+        ${zero.length?(zOpen?
+          `${zero.map(cardRowHtml).join('')}<button onclick="toggleZeros('${esc(company)}')" class="w-full text-center text-xs font-semibold text-ink-light py-2 bg-transparent border-0 cursor-pointer">Ocultar zerados ▲</button>`
+          :`<button onclick="toggleZeros('${esc(company)}')" class="w-full text-center text-xs font-semibold text-ink-light py-2 bg-transparent border-0 cursor-pointer">Mostrar ${zero.length} zerado${zero.length>1?'s':''} ▼</button>`
+        ):''}
+      </div>`:''}
     </div>`;
   }).join('');
 }
 function toggleCompany(c){
   if(expandedCompanies.has(c))expandedCompanies.delete(c);else expandedCompanies.add(c);
+  renderCards();
+}
+function toggleZeros(c){
+  if(expandedZeros.has(c))expandedZeros.delete(c);else expandedZeros.add(c);
   renderCards();
 }
 function openForm(){
@@ -979,6 +1010,40 @@ function copyCardField(id,field){
   const text=field==='code'?c.code:c.pin;
   navigator.clipboard.writeText(text||'').then(()=>showToast('Copiado!')).catch(()=>showToast('Não foi possível copiar.'));
 }
+async function openHistory(){
+  if(isOffline){showToast('Sem conexão — histórico indisponível offline.');return;}
+  const body=document.getElementById('historyBody');
+  body.innerHTML='<p class="text-center text-ink-light py-10">Carregando...</p>';
+  document.getElementById('historyScreen').classList.add('show');
+  try{
+    const r=await fetch('/api/historico');
+    if(r.status===401){closeHistory();navigate('authScreen');return;}
+    historico=(await r.json()).historico||[];
+  }catch(e){historico=[];}
+  renderHistory();
+}
+function renderHistory(){
+  const body=document.getElementById('historyBody');
+  if(!historico.length){
+    body.innerHTML=`<div class="text-center py-16 text-ink-light"><div class="text-5xl mb-3">🕓</div>Nenhum uso registrado ainda.</div>`;
+    return;
+  }
+  body.innerHTML=historico.map(h=>{
+    const data=new Date(h.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    return `
+    <div class="flex items-center justify-between px-4 py-3.5 rounded-2xl bg-white border border-line mt-3">
+      <div class="min-w-0">
+        <p class="font-grotesk font-semibold text-sm text-ink m-0 mb-0.5">${esc(h.card_name)}${h.company?` <span class="font-normal text-ink-light">· ${esc(h.company)}</span>`:''}</p>
+        <p class="text-xs text-ink-light m-0">${data}</p>
+      </div>
+      <div class="text-right ml-3 flex-shrink-0">
+        <p class="font-grotesk font-bold text-sm text-red-500 m-0">-${fmtMoney(h.valor_debitado,h.currency)}</p>
+        <p class="text-xs text-ink-light m-0">saldo: ${fmtMoney(h.saldo_novo,h.currency)}</p>
+      </div>
+    </div>`;
+  }).join('');
+}
+function closeHistory(){ document.getElementById('historyScreen').classList.remove('show'); }
 
 // ════════════════════════════════
 //  COMPARTILHAR ROTEIRO

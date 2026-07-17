@@ -52,3 +52,20 @@ create table if not exists atividades_roteiro (
 );
 
 create index if not exists idx_atividades_roteiro on atividades_roteiro(roteiro_id, dia_numero, ordem);
+
+-- v3: histórico de uso de gift cards
+
+create table if not exists historico_uso_gift_cards (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id) on delete cascade,
+  gift_card_id uuid references gift_cards(id) on delete set null,
+  card_name text not null,
+  company text default '',
+  valor_debitado numeric not null,
+  saldo_anterior numeric not null,
+  saldo_novo numeric not null,
+  currency text default 'US$',
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_historico_uso_user on historico_uso_gift_cards(user_id, created_at desc);
